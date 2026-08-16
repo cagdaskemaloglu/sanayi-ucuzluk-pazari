@@ -54,7 +54,10 @@ export async function GET() {
     bookType: "xlsx",
   }) as Buffer;
 
-  return new NextResponse(buffer, {
+  // NextResponse'un BodyInit tipi Node'un Buffer<ArrayBufferLike> tipini
+  // doğrudan kabul etmiyor (build sırasında TS hatası verir); Uint8Array'e
+  // çevirmek çalışma zamanında aynı byte'ları taşır, sadece tip uyumu için.
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
