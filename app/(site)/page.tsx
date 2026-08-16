@@ -1,8 +1,14 @@
 import { Suspense } from "react";
+import { Download } from "lucide-react";
 import { CategoryNav } from "@/components/features/catalog/category-nav";
 import { ProductGrid } from "@/components/features/catalog/product-grid";
 import { SearchBar } from "@/components/features/catalog/search-bar";
-import { getCategories, getProducts } from "@/lib/sanity/fetchers";
+import { FeaturedProducts } from "@/components/features/catalog/featured-products";
+import {
+  getCategories,
+  getProducts,
+  getFeaturedProducts,
+} from "@/lib/sanity/fetchers";
 
 interface HomePageProps {
   searchParams: {
@@ -14,14 +20,19 @@ interface HomePageProps {
 export default async function HomePage({ searchParams }: HomePageProps) {
   const categorySlug = searchParams.category;
   const search = searchParams.q;
+  const isDefaultView = !categorySlug && !search;
 
-  const [categories, products] = await Promise.all([
+  const [categories, products, featuredProducts] = await Promise.all([
     getCategories(),
     getProducts({ categorySlug, search }),
+    // Öne çıkan ürünler yalnızca varsayılan (filtresiz) görünümde gösterilir.
+    isDefaultView ? getFeaturedProducts() : Promise.resolve([]),
   ]);
 
   return (
     <div>
+      {isDefaultView && <FeaturedProducts products={featuredProducts} />}
+
       <CategoryNav
         categories={categories}
         activeCategory={categorySlug}
@@ -29,9 +40,20 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       />
 
       <div className="mx-auto max-w-7xl px-4 py-6">
-        <Suspense fallback={<div className="mb-4 h-10 rounded-md bg-gray-100" />}>
-          <SearchBar defaultValue={search} />
-        </Suspense>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex-1">
+            <Suspense fallback={<div className="h-10 rounded-md bg-gray-100" />}>
+              <SearchBar defaultValue={search} />
+            </Suspense>
+          </div>
+          <a
+            href="/api/fiyat-listesi"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-brand-navy hover:text-brand-navy"
+          >
+            <Download className="h-4 w-4" />
+            Fiyat Listesini İndir
+          </a>
+        </div>
 
         <ProductGrid products={products} />
       </div>

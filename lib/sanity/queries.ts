@@ -22,6 +22,20 @@ export const PRODUCTS_QUERY = groq`
     mainImage,
     stockStatus,
     pricingOptions,
+    featured,
+    "category": category->{ _id, title, "slug": slug.current }
+  }
+`;
+
+export const FEATURED_PRODUCTS_QUERY = groq`
+  *[_type == "product" && featured == true] | order(_createdAt desc) [0...8] {
+    _id,
+    name,
+    "slug": slug.current,
+    mainImage,
+    stockStatus,
+    pricingOptions,
+    featured,
     "category": category->{ _id, title, "slug": slug.current }
   }
 `;
@@ -36,6 +50,7 @@ export const PRODUCT_BY_SLUG_QUERY = groq`
     description,
     stockStatus,
     pricingOptions,
+    featured,
     "category": category->{ _id, title, "slug": slug.current }
   }
 `;

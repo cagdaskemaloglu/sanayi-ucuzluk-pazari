@@ -1,3 +1,5 @@
+import type { BulkTierLike } from "@/lib/pricing";
+
 export interface CartItem {
   id: string; // `${productId}-${unitType}` formatında benzersiz anahtar
   productId: string;
@@ -6,6 +8,7 @@ export interface CartItem {
   imageUrl: string | null;
   unitType: string;
   piecesPerUnit?: number;
-  price: number;
+  price: number; // temel (kademesiz) birim fiyat
+  bulkTiers?: BulkTierLike[];
   quantity: number;
 }

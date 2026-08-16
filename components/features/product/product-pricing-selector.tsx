@@ -5,7 +5,7 @@ import { Minus, Plus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/lib/cart/cart-context";
-import { UNIT_LABELS, formatPrice } from "@/lib/pricing";
+import { UNIT_LABELS, formatPrice, getEffectiveUnitPrice } from "@/lib/pricing";
 import type { PricingOption } from "@/lib/sanity/types";
 
 interface ProductPricingSelectorProps {
@@ -30,6 +30,13 @@ export function ProductPricingSelector({
   const [quantity, setQuantity] = useState(1);
   const selected = pricingOptions[selectedIndex];
 
+  const effectiveUnitPrice = selected
+    ? getEffectiveUnitPrice(selected.price, quantity, selected.bulkTiers)
+    : 0;
+  const isBulkDiscountApplied = selected
+    ? effectiveUnitPrice < selected.price
+    : false;
+
   function handleAddToCart() {
     if (!selected || isOutOfStock) return;
     addItem({
@@ -41,6 +48,7 @@ export function ProductPricingSelector({
       unitType: selected.unitType,
       piecesPerUnit: selected.piecesPerUnit,
       price: selected.price,
+      bulkTiers: selected.bulkTiers,
       quantity,
     });
     setQuantity(1);
@@ -54,32 +62,49 @@ export function ProductPricingSelector({
           <label
             key={index}
             className={cn(
-              "flex cursor-pointer items-center justify-between rounded-md border px-4 py-3 text-sm transition-colors",
+              "flex cursor-pointer flex-col gap-1 rounded-md border px-4 py-3 text-sm transition-colors",
               selectedIndex === index
                 ? "border-brand-navy bg-brand-navy/5"
                 : "border-gray-200 hover:border-gray-300"
             )}
           >
-            <span className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="pricing-option"
-                checked={selectedIndex === index}
-                onChange={() => setSelectedIndex(index)}
-                className="h-4 w-4 accent-brand-navy"
-              />
-              <span className="font-medium text-gray-800">
-                {UNIT_LABELS[option.unitType] ?? option.unitType}
-              </span>
-              {option.piecesPerUnit && (
-                <span className="text-gray-500">
-                  ({option.piecesPerUnit} adet)
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="pricing-option"
+                  checked={selectedIndex === index}
+                  onChange={() => setSelectedIndex(index)}
+                  className="h-4 w-4 accent-brand-navy"
+                />
+                <span className="font-medium text-gray-800">
+                  {UNIT_LABELS[option.unitType] ?? option.unitType}
                 </span>
-              )}
-            </span>
-            <span className="font-semibold text-brand-navy">
-              {formatPrice(option.price)}
-            </span>
+                {option.piecesPerUnit && (
+                  <span className="text-gray-500">
+                    ({option.piecesPerUnit} adet)
+                  </span>
+                )}
+              </span>
+              <span className="font-semibold text-brand-navy">
+                {formatPrice(option.price)}
+              </span>
+            </div>
+
+            {option.bulkTiers && option.bulkTiers.length > 0 && (
+              <p className="ml-6 text-xs text-gray-500">
+                Toplu alım:{" "}
+                {option.bulkTiers
+                  .slice()
+                  .sort((a, b) => a.minQuantity - b.minQuantity)
+                  .map((tier, i) => (
+                    <span key={i}>
+                      {i > 0 && " · "}
+                      {tier.minQuantity}+ adet: {formatPrice(tier.price)}
+                    </span>
+                  ))}
+              </p>
+            )}
           </label>
         ))}
       </div>
@@ -115,9 +140,15 @@ export function ProductPricingSelector({
           <ShoppingCart className="h-4 w-4" />
           {isOutOfStock
             ? "Stokta Yok"
-            : `Sepete Ekle — ${selected ? formatPrice(selected.price * quantity) : ""}`}
+            : `Sepete Ekle — ${formatPrice(effectiveUnitPrice * quantity)}`}
         </Button>
       </div>
+
+      {isBulkDiscountApplied && (
+        <p className="mt-2 text-xs font-medium text-green-600">
+          Toplu alım indirimi uygulandı — birim fiyat {formatPrice(effectiveUnitPrice)}
+        </p>
+      )}
     </div>
   );
 }

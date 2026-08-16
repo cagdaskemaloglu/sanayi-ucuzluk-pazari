@@ -1,4 +1,4 @@
-import { UNIT_LABELS, formatPrice } from "./pricing";
+import { UNIT_LABELS, formatPrice, getEffectiveUnitPrice } from "./pricing";
 import type { CartItem } from "./cart/types";
 
 interface BuildMessageParams {
@@ -19,19 +19,30 @@ export function buildWhatsappMessage({
   lines.push("Merhaba, aşağıdaki ürünler için sipariş/teklif talebim var:");
   lines.push("");
 
+  let total = 0;
+
   items.forEach((item) => {
     const unitLabel = UNIT_LABELS[item.unitType] ?? item.unitType;
     const pieces = item.piecesPerUnit ? ` (${item.piecesPerUnit} adet)` : "";
     const productUrl = `${siteUrl}/urun/${item.productSlug}`;
+    const unitPrice = getEffectiveUnitPrice(
+      item.price,
+      item.quantity,
+      item.bulkTiers
+    );
+    const lineTotal = unitPrice * item.quantity;
+    total += lineTotal;
+
+    const discountNote =
+      unitPrice < item.price ? " (toplu alım indirimli)" : "";
+
     lines.push(
       `• ${item.productName} — ${unitLabel}${pieces} x ${item.quantity} = ${formatPrice(
-        item.price * item.quantity
-      )}`
+        lineTotal
+      )}${discountNote}`
     );
     lines.push(`  ${productUrl}`);
   });
-
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   lines.push("");
   lines.push(`Toplam: ${formatPrice(total)}`);

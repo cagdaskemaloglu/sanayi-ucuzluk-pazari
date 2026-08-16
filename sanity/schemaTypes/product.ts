@@ -47,6 +47,15 @@ export const productType = defineType({
       rows: 5,
     }),
     defineField({
+      name: "featured",
+      title: "Öne Çıkan Ürün",
+      description:
+        "İşaretlenirse bu ürün ana sayfadaki 'Öne Çıkan Ürünler' " +
+        "bölümünde gösterilir.",
+      type: "boolean",
+      initialValue: false,
+    }),
+    defineField({
       name: "stockStatus",
       title: "Stok Durumu",
       type: "string",
@@ -101,6 +110,45 @@ export const productType = defineType({
               title: "Fiyat (₺)",
               type: "number",
               validation: (Rule) => Rule.required().min(0),
+            }),
+            defineField({
+              name: "bulkTiers",
+              title: "Toplu Alım Kademeleri (opsiyonel)",
+              description:
+                "Belirli bir miktarın üzerinde alımlarda birim fiyatı " +
+                "düşürmek için ekleyin. Örn: '10 ve üzeri: 140₺'. Miktar " +
+                "eşiğine ulaşan en yüksek kademe otomatik uygulanır.",
+              type: "array",
+              of: [
+                {
+                  type: "object",
+                  name: "bulkTier",
+                  title: "Kademe",
+                  fields: [
+                    defineField({
+                      name: "minQuantity",
+                      title: "Minimum Miktar",
+                      description: "Bu miktar ve üzerinde geçerli olur.",
+                      type: "number",
+                      validation: (Rule) => Rule.required().min(2),
+                    }),
+                    defineField({
+                      name: "price",
+                      title: "Bu Kademedeki Birim Fiyat (₺)",
+                      type: "number",
+                      validation: (Rule) => Rule.required().min(0),
+                    }),
+                  ],
+                  preview: {
+                    select: { minQuantity: "minQuantity", price: "price" },
+                    prepare({ minQuantity, price }) {
+                      return {
+                        title: `${minQuantity}+ adet: ${price} ₺/birim`,
+                      };
+                    },
+                  },
+                },
+              ],
             }),
           ],
           preview: {

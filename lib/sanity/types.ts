@@ -2,10 +2,16 @@ import type { Image } from "sanity";
 
 export type PricingUnitType = "adet" | "kutu" | "koli" | "palet";
 
+export interface BulkTier {
+  minQuantity: number;
+  price: number;
+}
+
 export interface PricingOption {
   unitType: PricingUnitType;
   piecesPerUnit?: number;
   price: number;
+  bulkTiers?: BulkTier[];
 }
 
 export interface Category {
@@ -22,6 +28,7 @@ export interface ProductListItem {
   mainImage: Image;
   stockStatus: "in_stock" | "out_of_stock";
   pricingOptions: PricingOption[];
+  featured?: boolean;
   category: {
     _id: string;
     title: string;

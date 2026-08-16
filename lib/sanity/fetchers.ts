@@ -2,6 +2,7 @@ import { client } from "./client";
 import {
   CATEGORIES_QUERY,
   PRODUCTS_QUERY,
+  FEATURED_PRODUCTS_QUERY,
   PRODUCT_BY_SLUG_QUERY,
   SITE_SETTINGS_QUERY,
 } from "./queries";
@@ -34,6 +35,10 @@ export async function getProducts(params?: {
     },
     FETCH_OPTIONS
   );
+}
+
+export async function getFeaturedProducts(): Promise<ProductListItem[]> {
+  return client.fetch(FEATURED_PRODUCTS_QUERY, {}, FETCH_OPTIONS);
 }
 
 export async function getProductBySlug(

@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/lib/cart/cart-context";
-import { UNIT_LABELS, formatPrice } from "@/lib/pricing";
+import { UNIT_LABELS, formatPrice, getEffectiveUnitPrice } from "@/lib/pricing";
 import type { PricingOption } from "@/lib/sanity/types";
 
 interface AddToCartPopoverProps {
@@ -58,6 +58,7 @@ export function AddToCartPopover({
       unitType: selected.unitType,
       piecesPerUnit: selected.piecesPerUnit,
       price: selected.price,
+      bulkTiers: selected.bulkTiers,
       quantity,
     });
     setOpen(false);
@@ -126,6 +127,21 @@ export function AddToCartPopover({
           ))}
         </div>
 
+        {selected?.bulkTiers && selected.bulkTiers.length > 0 && (
+          <p className="mt-2 text-[11px] text-gray-500">
+            Toplu alım:{" "}
+            {selected.bulkTiers
+              .slice()
+              .sort((a, b) => a.minQuantity - b.minQuantity)
+              .map((tier, i) => (
+                <span key={i}>
+                  {i > 0 && " · "}
+                  {tier.minQuantity}+: {formatPrice(tier.price)}
+                </span>
+              ))}
+          </p>
+        )}
+
         <div className="mt-3 flex items-center gap-2">
           <div className="flex items-center rounded-md border border-gray-300">
             <button
@@ -153,7 +169,7 @@ export function AddToCartPopover({
             onClick={handleConfirm}
             className="flex-1"
           >
-            Ekle
+            Ekle — {selected ? formatPrice(getEffectiveUnitPrice(selected.price, quantity, selected.bulkTiers) * quantity) : ""}
           </Button>
         </div>
       </PopoverContent>

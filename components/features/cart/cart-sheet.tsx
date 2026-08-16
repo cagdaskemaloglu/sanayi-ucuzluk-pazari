@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { TurnstileWidget } from "@/components/features/cart/turnstile-widget";
 import { useCart } from "@/lib/cart/cart-context";
-import { UNIT_LABELS, formatPrice } from "@/lib/pricing";
+import { UNIT_LABELS, formatPrice, getEffectiveUnitPrice } from "@/lib/pricing";
 import { buildWhatsappMessage, buildWhatsappUrl } from "@/lib/whatsapp";
 import { SITE_CONFIG } from "@/lib/constants";
 
@@ -81,7 +81,15 @@ export function CartSheet({ whatsappNumber }: CartSheetProps) {
         ) : (
           <>
             <div className="mt-4 flex-1 space-y-4 overflow-y-auto pr-1">
-              {items.map((item) => (
+              {items.map((item) => {
+                const effectiveUnitPrice = getEffectiveUnitPrice(
+                  item.price,
+                  item.quantity,
+                  item.bulkTiers
+                );
+                const isDiscounted = effectiveUnitPrice < item.price;
+
+                return (
                 <div
                   key={item.id}
                   className="flex gap-3 border-b border-gray-100 pb-4"
@@ -115,7 +123,12 @@ export function CartSheet({ whatsappNumber }: CartSheetProps) {
                       {item.piecesPerUnit
                         ? ` (${item.piecesPerUnit} adet)`
                         : ""}{" "}
-                      · {formatPrice(item.price)}
+                      · {formatPrice(effectiveUnitPrice)}
+                      {isDiscounted && (
+                        <span className="ml-1 text-green-600">
+                          (toplu indirim)
+                        </span>
+                      )}
                     </p>
 
                     <div className="mt-2 flex items-center justify-between">
@@ -147,7 +160,7 @@ export function CartSheet({ whatsappNumber }: CartSheetProps) {
 
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-brand-navy">
-                          {formatPrice(item.price * item.quantity)}
+                          {formatPrice(effectiveUnitPrice * item.quantity)}
                         </span>
                         <button
                           type="button"
@@ -161,7 +174,8 @@ export function CartSheet({ whatsappNumber }: CartSheetProps) {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="mt-4 space-y-4 border-t border-gray-200 pt-4">

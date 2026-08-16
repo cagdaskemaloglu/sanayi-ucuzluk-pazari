@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { CART_STORAGE_KEY } from "@/lib/constants";
+import { getEffectiveUnitPrice } from "@/lib/pricing";
 import type { CartItem } from "./types";
 
 interface CartState {
@@ -185,7 +186,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const totalPrice = useMemo(
-    () => state.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    () =>
+      state.items.reduce((sum, item) => {
+        const unitPrice = getEffectiveUnitPrice(
+          item.price,
+          item.quantity,
+          item.bulkTiers
+        );
+        return sum + unitPrice * item.quantity;
+      }, 0),
     [state.items]
   );
 

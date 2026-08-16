@@ -508,3 +508,54 @@ Stokta olmayan ürünlerde buton yine devre dışı, popover açılmaz.
    birim/miktarla eklenmiş olmalı, sepet popover'ı otomatik açılmalı
 3. Aynı ürünü farklı bir birimle tekrar ekle → sepette iki ayrı satır
    olarak görünmeli (örn. "3 Koli" ve "1 Palet" ayrı satırlar)
+
+## Güncelleme — Satış/Dönüşüm Geliştirmeleri
+
+### 1. Öne Çıkan Ürünler
+
+Sanity Studio → bir ürünü aç → **"Öne Çıkan Ürün"** kutucuğunu işaretle
+→ Publish. Ana sayfada (filtresiz/varsayılan görünümde), kategori
+menüsünün üzerinde yatay kaydırılabilir bir "Öne Çıkan Ürünler" bölümü
+otomatik belirir. En fazla 8 ürün gösterilir. Hiç öne çıkan ürün
+işaretlenmediyse bölüm hiç görünmez. Bir kategori filtrelendiğinde veya
+arama yapıldığında bu bölüm gizlenir (odak ürün listesinde kalsın diye).
+
+### 2. İndirilebilir Fiyat Listesi (Excel)
+
+Ana sayfada arama kutusunun yanında **"Fiyat Listesini İndir"** linki
+eklendi. Tıklandığında `sanayi-ucuzluk-pazari-fiyat-listesi.xlsx` adında
+bir Excel dosyası iner — tüm ürünler, satış birimleri, fiyatlar, toplu
+alım kademeleri ve stok durumu tek tabloda. Dosya her istekte Sanity'den
+**anlık** üretilir, yani Studio'da yaptığın her değişiklik bir sonraki
+indirmede otomatik yansır — ayrıca güncellemene gerek yok.
+
+Teknik: `/api/fiyat-listesi` route'u (`app/api/fiyat-listesi/route.ts`),
+`xlsx` (SheetJS) paketiyle sunucu tarafında oluşturuluyor.
+
+### 3. Miktar Bazlı Kademeli Fiyatlandırma
+
+Sanity Studio → bir ürünün satış birimlerinden birini aç → **"Toplu Alım
+Kademeleri"** alanına istediğin kadar kademe ekleyebilirsin. Örnek:
+
+- 10 ve üzeri: 140 ₺/birim
+- 25 ve üzeri: 125 ₺/birim
+
+Müşteri miktarı artırdıkça (ürün detay sayfasında veya kart popover'ında)
+karşıladığı en avantajlı kademe otomatik uygulanır, "Toplu alım indirimi
+uygulandı" notuyla gösterilir. Sepette, sepet toplamında ve WhatsApp
+mesajında da bu indirimli fiyat kullanılır. Kademe girmezsen ürün eskisi
+gibi sabit fiyatla çalışmaya devam eder — tamamen opsiyonel.
+
+### Test
+
+1. `npm run dev` → Studio'da 2-3 ürünü "Öne Çıkan Ürün" işaretle, Publish
+   et → ana sayfada üstte görünmeli
+2. "Fiyat Listesini İndir"e tıkla → Excel dosyası inmeli, Excel/Google
+   Sheets'te açıp verilerin doğru geldiğini kontrol et
+3. Bir ürünün bir satış birimine 2 kademe ekle (örn. 5+ ve 10+), Publish
+   et → ürün detay sayfasında miktarı 5'e çıkar, fiyatın otomatik
+   düştüğünü ve "Toplu alım indirimi uygulandı" notunun çıktığını doğrula
+4. Aynı ürünü sepete ekleyip miktarı sepette de değiştir → fiyatın
+   kademeye göre güncellendiğini, sepet toplamının doğru olduğunu kontrol et
+5. WhatsApp'a gönder → mesajdaki fiyatların indirimli tutarları
+   yansıttığını kontrol et
