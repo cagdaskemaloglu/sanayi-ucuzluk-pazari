@@ -15,6 +15,7 @@ interface ProductPricingSelectorProps {
   imageUrl: string | null;
   pricingOptions: PricingOption[];
   isOutOfStock: boolean;
+  vatRate?: number;
 }
 
 export function ProductPricingSelector({
@@ -24,6 +25,7 @@ export function ProductPricingSelector({
   imageUrl,
   pricingOptions,
   isOutOfStock,
+  vatRate,
 }: ProductPricingSelectorProps) {
   const { addItem } = useCart();
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -49,6 +51,7 @@ export function ProductPricingSelector({
       piecesPerUnit: selected.piecesPerUnit,
       price: selected.price,
       bulkTiers: selected.bulkTiers,
+      vatRate,
       quantity,
     });
     setQuantity(1);
@@ -56,7 +59,9 @@ export function ProductPricingSelector({
 
   return (
     <div>
-      <p className="text-sm font-medium text-gray-700">Satış Birimi Seç</p>
+      <p className="text-sm font-medium text-gray-700">
+        Satış Birimi Seç <span className="font-normal text-gray-400">(fiyatlar KDV hariç)</span>
+      </p>
       <div className="mt-2 flex flex-col gap-2">
         {pricingOptions.map((option, index) => (
           <label

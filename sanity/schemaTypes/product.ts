@@ -70,10 +70,22 @@ export const productType = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: "pricingOptions",
-      title: "Satış Birimleri ve Fiyatları",
+      name: "vatRate",
+      title: "KDV Oranı (%)",
       description:
-        "Bu ürün hangi birimlerle satılıyorsa ekleyin. Adet dışındaki birimlerde (kutu/koli/palet) kaç adet içerdiğini girin.",
+        "Aşağıda gireceğiniz tüm fiyatlar KDV HARİÇ olmalıdır. Bu ürüne " +
+        "uygulanacak KDV yüzdesini girin (örn. 20 veya 10 veya 1).",
+      type: "number",
+      initialValue: 20,
+      validation: (Rule) => Rule.required().min(0).max(100),
+    }),
+    defineField({
+      name: "pricingOptions",
+      title: "Satış Birimleri ve Fiyatları (KDV Hariç)",
+      description:
+        "Bu ürün hangi birimlerle satılıyorsa ekleyin, fiyatları KDV " +
+        "HARİÇ girin. Adet dışındaki birimlerde (kutu/koli/palet) kaç " +
+        "adet içerdiğini girin.",
       type: "array",
       validation: (Rule) => Rule.required().min(1),
       of: [

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { getProducts } from "@/lib/sanity/fetchers";
-import { UNIT_LABELS } from "@/lib/pricing";
+import { UNIT_LABELS, getAmountIncludingVat } from "@/lib/pricing";
 
 // Her istek güncel Sanity verisiyle üretilsin diye statik olarak
 // önbelleğe alınmasın.
@@ -25,7 +25,11 @@ export async function GET() {
         Kategori: product.category?.title ?? "",
         Birim: UNIT_LABELS[option.unitType] ?? option.unitType,
         "Birimdeki Adet": option.piecesPerUnit ?? "",
-        "Fiyat (₺)": option.price,
+        "Fiyat (KDV Hariç, ₺)": option.price,
+        "KDV Oranı (%)": product.vatRate ?? 20,
+        "Fiyat (KDV Dahil, ₺)": Number(
+          getAmountIncludingVat(option.price, product.vatRate).toFixed(2)
+        ),
         "Toplu Alım Kademeleri": bulkTiersText,
         "Stok Durumu":
           product.stockStatus === "out_of_stock" ? "Stokta Yok" : "Stokta Var",
@@ -41,13 +45,15 @@ export async function GET() {
     { wch: 20 }, // Kategori
     { wch: 10 }, // Birim
     { wch: 14 }, // Birimdeki Adet
-    { wch: 12 }, // Fiyat
+    { wch: 18 }, // Fiyat (KDV Hariç)
+    { wch: 12 }, // KDV Oranı
+    { wch: 18 }, // Fiyat (KDV Dahil)
     { wch: 30 }, // Toplu Alım Kademeleri
     { wch: 12 }, // Stok Durumu
   ];
 
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Fiyat Listesi");
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Katalog");
 
   const buffer = XLSX.write(workbook, {
     type: "buffer",
@@ -62,7 +68,7 @@ export async function GET() {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition":
-        'attachment; filename="sanayi-ucuzluk-pazari-fiyat-listesi.xlsx"',
+        'attachment; filename="sanayi-ucuzluk-pazari-katalog.xlsx"',
     },
   });
 }

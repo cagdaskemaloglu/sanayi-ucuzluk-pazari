@@ -1,4 +1,5 @@
 import { SiteHeader } from "@/components/features/header/site-header";
+import { TopContactBar } from "@/components/features/header/top-contact-bar";
 import { SiteFooter } from "@/components/features/footer/site-footer";
 import { AboutSection } from "@/components/features/about/about-section";
 import { WhatsappFloatingButton } from "@/components/features/whatsapp-button/whatsapp-floating-button";
@@ -22,7 +23,8 @@ export default async function SiteLayout({
 
   return (
     <CartProvider>
-      <SiteHeader />
+      <TopContactBar siteSettings={siteSettings} />
+      <SiteHeader siteSettings={siteSettings} />
       <main className="min-h-[60vh]">{children}</main>
       <AboutSection siteSettings={siteSettings} />
       <SiteFooter siteSettings={siteSettings} />

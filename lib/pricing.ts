@@ -32,3 +32,20 @@ export function getEffectiveUnitPrice(
 
   return applicableTier ? applicableTier.price : basePrice;
 }
+
+// Sanity'de fiyatlar hep KDV HARİÇ girilir. Bir ürüne KDV oranı
+// girilmediyse (eski ürünler/varsayılan) Türkiye standart oranı %20
+// kabul edilir.
+export const DEFAULT_VAT_RATE = 20;
+
+export function getVatAmount(amountExcludingVat: number, vatRate?: number): number {
+  const rate = vatRate ?? DEFAULT_VAT_RATE;
+  return amountExcludingVat * (rate / 100);
+}
+
+export function getAmountIncludingVat(
+  amountExcludingVat: number,
+  vatRate?: number
+): number {
+  return amountExcludingVat + getVatAmount(amountExcludingVat, vatRate);
+}

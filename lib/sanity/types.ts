@@ -29,6 +29,7 @@ export interface ProductListItem {
   stockStatus: "in_stock" | "out_of_stock";
   pricingOptions: PricingOption[];
   featured?: boolean;
+  vatRate?: number;
   category: {
     _id: string;
     title: string;
@@ -42,6 +43,12 @@ export interface ProductDetail extends ProductListItem {
 }
 
 export interface SiteSettings {
+  siteIcon?: Image;
+  favicon?: Image;
+  siteTitle?: string;
+  siteTitleColor?: string;
+  siteDescription?: string;
+  siteDescriptionColor?: string;
   whatsappNumber: string;
   phone?: string;
   email?: string;
@@ -50,4 +57,5 @@ export interface SiteSettings {
   aboutTitle?: string;
   aboutText?: string;
   aboutImages?: Image[];
+  catalogDownloadEnabled?: boolean;
 }

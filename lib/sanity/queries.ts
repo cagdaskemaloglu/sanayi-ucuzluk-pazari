@@ -23,6 +23,7 @@ export const PRODUCTS_QUERY = groq`
     stockStatus,
     pricingOptions,
     featured,
+    vatRate,
     "category": category->{ _id, title, "slug": slug.current }
   }
 `;
@@ -36,6 +37,7 @@ export const FEATURED_PRODUCTS_QUERY = groq`
     stockStatus,
     pricingOptions,
     featured,
+    vatRate,
     "category": category->{ _id, title, "slug": slug.current }
   }
 `;
@@ -51,12 +53,19 @@ export const PRODUCT_BY_SLUG_QUERY = groq`
     stockStatus,
     pricingOptions,
     featured,
+    vatRate,
     "category": category->{ _id, title, "slug": slug.current }
   }
 `;
 
 export const SITE_SETTINGS_QUERY = groq`
   *[_type == "siteSettings"][0] {
+    siteIcon,
+    favicon,
+    siteTitle,
+    siteTitleColor,
+    siteDescription,
+    siteDescriptionColor,
     whatsappNumber,
     phone,
     email,
@@ -64,6 +73,7 @@ export const SITE_SETTINGS_QUERY = groq`
     googleMapsEmbedUrl,
     aboutTitle,
     aboutText,
-    aboutImages
+    aboutImages,
+    catalogDownloadEnabled
   }
 `;

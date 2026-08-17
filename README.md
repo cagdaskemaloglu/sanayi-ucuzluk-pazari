@@ -559,3 +559,141 @@ gibi sabit fiyatla çalışmaya devam eder — tamamen opsiyonel.
    kademeye göre güncellendiğini, sepet toplamının doğru olduğunu kontrol et
 5. WhatsApp'a gönder → mesajdaki fiyatların indirimli tutarları
    yansıttığını kontrol et
+
+## Güncelleme — Header İkonu, Dinamik Başlık/Açıklama & Favicon
+
+Sanity Studio → Site Ayarları'na yeni alanlar eklendi (hepsi opsiyonel,
+boş bırakılırsa hiçbir şey bozulmaz, mevcut varsayılanlar kullanılır):
+
+- **Header İkonu** — site adının yanında küçük bir ikon/logo gösterir
+  (kare görsel önerilir). Boşsa sadece site adı görünür, layout bozulmaz.
+- **Favicon** — tarayıcı sekmesindeki ikon. Boşsa varsayılan (yok) kalır.
+- **Site Başlığı** — header'da ve sayfa başlıklarında (`<title>`)
+  "Sanayi Ucuzluk Pazarı" yerine kullanılır.
+- **Site Başlığı Rengi** — hex kod (örn. `#F5A623`). Boşsa beyaz kalır.
+- **Site Açıklaması** — Google/sosyal medya paylaşımlarında görünen kısa
+  açıklama; ayrıca header'da başlığın altında küçük bir alt yazı olarak
+  da gösterilir (sadece sm ve üstü ekranlarda, mobilde yer kazanmak için gizli).
+- **Site Açıklaması Rengi** — açıklama metninin rengi (hex kod).
+
+### Test
+
+1. Studio'da Site Ayarları'na gir, "Header İkonu" alanına bir logo yükle,
+   Publish et → header'da site adının solunda görünmeli
+2. "Site Başlığı"nı değiştir (örn. "SUP Toptan") → header ve tarayıcı
+   sekmesi başlığı güncellenmeli
+3. "Site Başlığı Rengi"ne `#F5A623` gibi bir hex kod gir → header'daki
+   başlık o renkte görünmeli
+4. "Favicon" alanına bir görsel yükle → tarayıcı sekmesinde ikon
+   görünmeli (bazı tarayıcılar favicon'u cache'leyebilir, görünmezse
+   sekmeyi kapatıp yeniden aç veya hard refresh yap)
+5. Tüm bu alanları boş bırakıp Publish et → site eskisi gibi
+   varsayılan görünüme dönmeli, hiçbir şey kırılmamalı
+
+## Güncelleme — Header Rengi, Kart Buton Rengi & Katalog İndir
+
+- **Header arka planı beyaza çevrildi** (önceden koyu lacivertti).
+  Metin renkleri kontrast için koyulaştırıldı (varsayılan başlık rengi
+  artık lacivert, açıklama gri). Studio'dan girilen özel "Site Başlığı
+  Rengi" / "Site Açıklaması Rengi" hâlâ her zaman öncelikli.
+- **Sepet ikonu** (header sağ üst) da beyaz arka plana göre yeniden
+  renklendirildi (artık gri kenarlıklı, lacivert ikonlu).
+- **Ürün kartındaki "Sepete Ekle" butonu** artık turuncu değil,
+  footer'ın lacivert tonunda (`brand-navy-dark`).
+- **"Fiyat Listesini İndir" → "Katalog İndir"** olarak yeniden
+  adlandırıldı, indirme adresi `/api/katalog` oldu (eski
+  `/api/fiyat-listesi` kaldırıldı).
+- **Katalog indirme butonu artık Studio'dan açılıp kapatılabiliyor** —
+  Site Ayarları → "Katalog İndirme Butonu Aktif mi?" kutucuğunu
+  kapatırsan buton ana sayfada hiç görünmez. Varsayılan: açık.
+
+### Test
+
+1. Ana sayfada header'ın artık beyaz olduğunu, sepet ikonunun okunaklı
+   göründüğünü kontrol et
+2. Bir ürün kartındaki "Sepete Ekle" butonunun artık lacivert (footer
+   ile aynı ton) olduğunu doğrula
+3. "Katalog İndir" butonuna tıkla → `sanayi-ucuzluk-pazari-katalog.xlsx`
+   inmeli
+4. Studio → Site Ayarları → "Katalog İndirme Butonu Aktif mi?"
+   kutucuğunu kapat, Publish et → ana sayfada buton kaybolmalı; tekrar
+   aç → geri gelmeli
+
+## Güncelleme — KDV, Adres Alanı & Online Öde (iyzico'ya Hazırlık)
+
+### Ne değişti
+
+- **Ürün fiyatları artık KDV HARİÇ girilir.** Sanity Studio → her ürünün
+  "KDV Oranı (%)" alanına o ürüne uygulanacak oranı gir (örn. 20, 10, 1).
+  Varsayılan %20. Bu alan girilmezse (eski ürünlerde) sistem otomatik
+  %20 kabul eder — hiçbir şey kırılmaz.
+- **Sepete Adres alanı eklendi** — Ad Soyad ile Mesaj arasında, opsiyonel.
+- **"WhatsApp'a Gönder" butonu artık yeşil** (WhatsApp'ın kendi rengi) ve
+  üzerinde **KDV HARİÇ toplam tutar** yazıyor. WhatsApp entegrasyonu
+  (sipariş/teklif talebi) hâlâ bu buton üzerinden yürüyor, mesaj içeriği
+  aynı mantıkla oluşuyor (artık adres bilgisi de mesaja ekleniyor).
+- **Bu butonun altında ürün bazında KDV dökümü** listeleniyor (her ürün
+  kendi satırında, KDV oranı ve tutarıyla), altında toplam KDV, en altta
+  da **"Online Öde"** butonu — üzerinde **KDV DAHİL genel toplam** yazıyor.
+- **"Online Öde" şimdilik devre dışı** (gri, tıklanamaz) — "Online ödeme
+  yakında aktif olacak (iyzico entegrasyonu)" notu gösteriliyor. İyzico
+  hesabı/API bilgilerin hazır olduğunda bu butonu gerçek ödeme akışına
+  bağlayacağız.
+- Katalog Excel dosyasına da KDV oranı ve KDV dahil fiyat sütunları eklendi.
+
+### Test
+
+1. Studio'da bir ürünün KDV Oranı'nı %20'den farklı bir değere (örn. %10)
+   değiştir, Publish et
+2. O ürünü sepete ekle → sepet popover'ında alt kısımdaki KDV dökümünde
+   doğru oranın kullanıldığını kontrol et
+3. Adres alanına bir şeyler yaz → WhatsApp'a gönderince mesajda adres de
+   görünmeli
+4. "WhatsApp'a Gönder" butonundaki tutarın KDV hariç toplamla, "Online
+   Öde" butonundaki tutarın KDV dahil toplamla eşleştiğini doğrula
+   (aradaki fark toplam KDV tutarına eşit olmalı)
+5. "Katalog İndir" ile Excel'i indirip yeni KDV sütunlarının doğru
+   geldiğini kontrol et
+6. `npm run build` çalıştırıp hatasız tamamlandığını doğrula (Vercel'e
+   göndermeden önce her zaman önerilir)
+
+### Sıradaki adım (senden bekleyen)
+
+İyzico hesabını oluşturup API anahtarlarını aldığında haber ver — "Online
+Öde" butonunu gerçek ödeme akışına bağlayalım (checkout formu, ödeme
+sayfası, başarılı/başarısız dönüş sayfaları, .env'e API key ekleme vb.).
+
+## Güncelleme — Header Üstü İletişim Çubuğu
+
+Header'ın hemen üstüne ince bir bilgi çubuğu eklendi. Arka plan rengi
+`#150136` (footer ile aynı ton), üzerinde sırasıyla:
+
+- 📧 E-posta (mail ikonu)
+- 📞 Telefon (telefon ikonu)
+- 📍 Adres (konum ikonu)
+
+Bilgiler Sanity Studio → Site Ayarları'ndan geliyor (aynı e-posta/telefon/
+adres alanları footer'da da kullanılıyor). Üçü de boşsa çubuk hiç görünmez.
+
+Bu çubuk **sticky değil** — sayfa aşağı kaydırılınca normal akışla
+birlikte kaybolur, hemen altındaki header (sepet ikonu vb.) eskisi gibi
+en üstte sabit kalmaya devam eder.
+
+### Test
+
+1. `npm run dev` → ana sayfada header'ın üstünde koyu mor bir çubukta
+   e-posta/telefon/adresin göründüğünü kontrol et
+2. Sayfayı aşağı kaydır → çubuk kaybolmalı, header sepet ikonuyla
+   birlikte en üstte sabit kalmalı
+3. Studio'da Site Ayarları'ndaki telefon/e-posta/adresi değiştirip
+   Publish et → çubuktaki bilgiler güncellenmeli
+4. Dar ekranda (mobil) test et — bilgiler sığmazsa alt satıra geçmeli,
+   taşma olmamalı
+
+## Düzeltme — Arama Kutusu / Katalog İndir Hizalaması
+
+`SearchBar` bileşeninin kendi içinde tanımlı `mb-4` (alt boşluk), ana
+sayfadaki flex satırında "Katalog İndir" linkiyle dikey hizasının
+kaymasına neden oluyordu. `mb-4` bileşenden kaldırıldı, boşluk
+sorumluluğu tamamen üst bileşene (`app/(site)/page.tsx`) bırakıldı.
+Artık ikisi de aynı yatay hizada.

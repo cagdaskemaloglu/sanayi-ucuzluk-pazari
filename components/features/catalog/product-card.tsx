@@ -66,6 +66,7 @@ export function ProductCard({ product }: { product: ProductListItem }) {
           imageUrl={imageUrl}
           pricingOptions={product.pricingOptions}
           isOutOfStock={isOutOfStock}
+          vatRate={product.vatRate}
         />
       </div>
     </div>

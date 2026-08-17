@@ -9,12 +9,13 @@ import {
   useState,
 } from "react";
 import { CART_STORAGE_KEY } from "@/lib/constants";
-import { getEffectiveUnitPrice } from "@/lib/pricing";
+import { getEffectiveUnitPrice, getVatAmount } from "@/lib/pricing";
 import type { CartItem } from "./types";
 
 interface CartState {
   items: CartItem[];
   customerName: string;
+  customerAddress: string;
   customerNote: string;
   isOpen: boolean;
 }
@@ -26,17 +27,24 @@ type CartAction =
   | { type: "REMOVE_ITEM"; payload: { id: string } }
   | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
   | { type: "SET_CUSTOMER_NAME"; payload: string }
+  | { type: "SET_CUSTOMER_ADDRESS"; payload: string }
   | { type: "SET_CUSTOMER_NOTE"; payload: string }
   | { type: "CLEAR_CART" }
   | { type: "SET_OPEN"; payload: boolean }
   | {
       type: "HYDRATE";
-      payload: { items: CartItem[]; customerName: string; customerNote: string };
+      payload: {
+        items: CartItem[];
+        customerName: string;
+        customerAddress: string;
+        customerNote: string;
+      };
     };
 
 const initialState: CartState = {
   items: [],
   customerName: "",
+  customerAddress: "",
   customerNote: "",
   isOpen: false,
 };
@@ -48,6 +56,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         ...state,
         items: action.payload.items,
         customerName: action.payload.customerName,
+        customerAddress: action.payload.customerAddress,
         customerNote: action.payload.customerNote,
       };
 
@@ -104,6 +113,9 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     case "SET_CUSTOMER_NAME":
       return { ...state, customerName: action.payload };
 
+    case "SET_CUSTOMER_ADDRESS":
+      return { ...state, customerAddress: action.payload };
+
     case "SET_CUSTOMER_NOTE":
       return { ...state, customerNote: action.payload };
 
@@ -118,20 +130,36 @@ function cartReducer(state: CartState, action: CartAction): CartState {
   }
 }
 
+export interface CartItemWithVat extends CartItem {
+  effectiveUnitPrice: number;
+  lineTotalExcludingVat: number;
+  vatAmount: number;
+  lineTotalIncludingVat: number;
+}
+
 interface CartContextValue {
   items: CartItem[];
   customerName: string;
+  customerAddress: string;
   customerNote: string;
   isOpen: boolean;
   addItem: (item: AddItemPayload) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   setCustomerName: (name: string) => void;
+  setCustomerAddress: (address: string) => void;
   setCustomerNote: (note: string) => void;
   clearCart: () => void;
   setOpen: (open: boolean) => void;
   totalItems: number;
-  totalPrice: number;
+  /** KDV HARİÇ ara toplam (WhatsApp'a gönder butonunda kullanılır) */
+  totalPriceExcludingVat: number;
+  /** Sadece KDV tutarı */
+  totalVatAmount: number;
+  /** KDV DAHİL genel toplam (Online Öde butonunda kullanılır) */
+  totalPriceIncludingVat: number;
+  /** Her ürün için hesaplanmış KDV detayları (sepet listesinde gösterim için) */
+  itemsWithVat: CartItemWithVat[];
 }
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
@@ -151,6 +179,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           payload: {
             items: parsed.items ?? [],
             customerName: parsed.customerName ?? "",
+            customerAddress: parsed.customerAddress ?? "",
             customerNote: parsed.customerNote ?? "",
           },
         });
@@ -172,35 +201,63 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         JSON.stringify({
           items: state.items,
           customerName: state.customerName,
+          customerAddress: state.customerAddress,
           customerNote: state.customerNote,
         })
       );
     } catch {
       // localStorage yazılamazsa sessizce yut, kritik değil.
     }
-  }, [state.items, state.customerName, state.customerNote, hydrated]);
+  }, [
+    state.items,
+    state.customerName,
+    state.customerAddress,
+    state.customerNote,
+    hydrated,
+  ]);
 
   const totalItems = useMemo(
     () => state.items.reduce((sum, item) => sum + item.quantity, 0),
     [state.items]
   );
 
-  const totalPrice = useMemo(
+  const itemsWithVat = useMemo<CartItemWithVat[]>(
     () =>
-      state.items.reduce((sum, item) => {
-        const unitPrice = getEffectiveUnitPrice(
+      state.items.map((item) => {
+        const effectiveUnitPrice = getEffectiveUnitPrice(
           item.price,
           item.quantity,
           item.bulkTiers
         );
-        return sum + unitPrice * item.quantity;
-      }, 0),
+        const lineTotalExcludingVat = effectiveUnitPrice * item.quantity;
+        const vatAmount = getVatAmount(lineTotalExcludingVat, item.vatRate);
+        return {
+          ...item,
+          effectiveUnitPrice,
+          lineTotalExcludingVat,
+          vatAmount,
+          lineTotalIncludingVat: lineTotalExcludingVat + vatAmount,
+        };
+      }),
     [state.items]
   );
+
+  const totalPriceExcludingVat = useMemo(
+    () => itemsWithVat.reduce((sum, item) => sum + item.lineTotalExcludingVat, 0),
+    [itemsWithVat]
+  );
+
+  const totalVatAmount = useMemo(
+    () => itemsWithVat.reduce((sum, item) => sum + item.vatAmount, 0),
+    [itemsWithVat]
+  );
+
+  const totalPriceIncludingVat = totalPriceExcludingVat + totalVatAmount;
 
   const value: CartContextValue = {
     items: state.items,
     customerName: state.customerName,
+    customerAddress: state.customerAddress,
     customerNote: state.customerNote,
     isOpen: state.isOpen,
     addItem: (item) => dispatch({ type: "ADD_ITEM", payload: item }),
@@ -209,12 +266,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity } }),
     setCustomerName: (name) =>
       dispatch({ type: "SET_CUSTOMER_NAME", payload: name }),
+    setCustomerAddress: (address) =>
+      dispatch({ type: "SET_CUSTOMER_ADDRESS", payload: address }),
     setCustomerNote: (note) =>
       dispatch({ type: "SET_CUSTOMER_NOTE", payload: note }),
     clearCart: () => dispatch({ type: "CLEAR_CART" }),
     setOpen: (open) => dispatch({ type: "SET_OPEN", payload: open }),
     totalItems,
-    totalPrice,
+    totalPriceExcludingVat,
+    totalVatAmount,
+    totalPriceIncludingVat,
+    itemsWithVat,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

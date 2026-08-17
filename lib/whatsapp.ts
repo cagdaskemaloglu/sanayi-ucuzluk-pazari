@@ -4,13 +4,18 @@ import type { CartItem } from "./cart/types";
 interface BuildMessageParams {
   items: CartItem[];
   customerName?: string;
+  customerAddress?: string;
   customerNote?: string;
   siteUrl: string;
 }
 
+// Not: Bu mesajdaki toplam KDV HARİÇ tutardır (Sanity'de fiyatlar KDV
+// hariç girildiği için) — WhatsApp'a Gönder butonunun gösterdiği tutarla
+// birebir aynı olması gerekir.
 export function buildWhatsappMessage({
   items,
   customerName,
+  customerAddress,
   customerNote,
   siteUrl,
 }: BuildMessageParams): string {
@@ -45,11 +50,15 @@ export function buildWhatsappMessage({
   });
 
   lines.push("");
-  lines.push(`Toplam: ${formatPrice(total)}`);
+  lines.push(`Toplam (KDV hariç): ${formatPrice(total)}`);
 
   if (customerName?.trim()) {
     lines.push("");
     lines.push(`Ad Soyad: ${customerName.trim()}`);
+  }
+
+  if (customerAddress?.trim()) {
+    lines.push(`Adres: ${customerAddress.trim()}`);
   }
 
   if (customerNote?.trim()) {

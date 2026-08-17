@@ -20,14 +20,16 @@ interface AddToCartPopoverProps {
   imageUrl: string | null;
   pricingOptions: PricingOption[];
   isOutOfStock: boolean;
+  vatRate?: number;
 }
 
 // Trigger buton stilini doğrudan burada tanımlıyoruz (Button bileşenini
 // Radix'in asChild/Slot mekanizmasıyla sarmalamak yerine) — böylece
 // event handler birleştirmeyle ilgili olası çakışmalar tamamen ortadan
 // kalkıyor, tetikleyici PopoverTrigger'ın kendi native <button>'ı olur.
+// Renk footer'ın arka plan rengiyle (brand-navy-dark) eşleştirildi.
 const triggerClassName =
-  "mt-auto inline-flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-brand-accent px-3 h-9 text-sm font-medium text-white transition-colors hover:bg-brand-accent-hover focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50";
+  "mt-auto inline-flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-brand-navy-dark px-3 h-9 text-sm font-medium text-white transition-colors hover:bg-brand-navy focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50";
 
 // Ürün kartındaki "Sepete Ekle" butonu — tıklanınca hangi satış biriminden
 // (adet/kutu/koli/palet) kaç adet eklenmek istendiğini soran küçük bir
@@ -40,6 +42,7 @@ export function AddToCartPopover({
   imageUrl,
   pricingOptions,
   isOutOfStock,
+  vatRate,
 }: AddToCartPopoverProps) {
   const { addItem } = useCart();
   const [open, setOpen] = useState(false);
@@ -59,6 +62,7 @@ export function AddToCartPopover({
       piecesPerUnit: selected.piecesPerUnit,
       price: selected.price,
       bulkTiers: selected.bulkTiers,
+      vatRate,
       quantity,
     });
     setOpen(false);

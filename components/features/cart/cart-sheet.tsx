@@ -3,17 +3,16 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { CreditCard, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
 import { TurnstileWidget } from "@/components/features/cart/turnstile-widget";
 import { useCart } from "@/lib/cart/cart-context";
-import { UNIT_LABELS, formatPrice, getEffectiveUnitPrice } from "@/lib/pricing";
+import { UNIT_LABELS, formatPrice } from "@/lib/pricing";
 import { buildWhatsappMessage, buildWhatsappUrl } from "@/lib/whatsapp";
 import { SITE_CONFIG } from "@/lib/constants";
 
@@ -28,17 +27,22 @@ const turnstileRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 export function CartSheet({ whatsappNumber }: CartSheetProps) {
   const {
     items,
+    itemsWithVat,
     customerName,
+    customerAddress,
     customerNote,
     isOpen,
     setOpen,
     removeItem,
     updateQuantity,
     setCustomerName,
+    setCustomerAddress,
     setCustomerNote,
     clearCart,
     totalItems,
-    totalPrice,
+    totalPriceExcludingVat,
+    totalVatAmount,
+    totalPriceIncludingVat,
   } = useCart();
 
   const [isVerified, setIsVerified] = useState(!turnstileRequired);
@@ -52,6 +56,7 @@ export function CartSheet({ whatsappNumber }: CartSheetProps) {
     const message = buildWhatsappMessage({
       items,
       customerName: customerName.trim() || undefined,
+      customerAddress: customerAddress.trim() || undefined,
       customerNote,
       siteUrl: window.location.origin,
     });
@@ -81,111 +86,100 @@ export function CartSheet({ whatsappNumber }: CartSheetProps) {
         ) : (
           <>
             <div className="mt-4 flex-1 space-y-4 overflow-y-auto pr-1">
-              {items.map((item) => {
-                const effectiveUnitPrice = getEffectiveUnitPrice(
-                  item.price,
-                  item.quantity,
-                  item.bulkTiers
-                );
-                const isDiscounted = effectiveUnitPrice < item.price;
+              {itemsWithVat.map((item) => {
+                const isDiscounted = item.effectiveUnitPrice < item.price;
 
                 return (
-                <div
-                  key={item.id}
-                  className="flex gap-3 border-b border-gray-100 pb-4"
-                >
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-50">
-                    {item.imageUrl ? (
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.productName}
-                        fill
-                        className="object-contain p-1"
-                        sizes="64px"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-[10px] text-gray-400">
-                        Görsel yok
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-1 flex-col">
-                    <Link
-                      href={`/urun/${item.productSlug}`}
-                      onClick={() => setOpen(false)}
-                      className="line-clamp-2 text-sm font-medium text-gray-800 hover:text-brand-navy"
-                    >
-                      {item.productName}
-                    </Link>
-                    <p className="mt-0.5 text-xs text-gray-500">
-                      {UNIT_LABELS[item.unitType] ?? item.unitType}
-                      {item.piecesPerUnit
-                        ? ` (${item.piecesPerUnit} adet)`
-                        : ""}{" "}
-                      · {formatPrice(effectiveUnitPrice)}
-                      {isDiscounted && (
-                        <span className="ml-1 text-green-600">
-                          (toplu indirim)
-                        </span>
+                  <div
+                    key={item.id}
+                    className="flex gap-3 border-b border-gray-100 pb-4"
+                  >
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-50">
+                      {item.imageUrl ? (
+                        <Image
+                          src={item.imageUrl}
+                          alt={item.productName}
+                          fill
+                          className="object-contain p-1"
+                          sizes="64px"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-[10px] text-gray-400">
+                          Görsel yok
+                        </div>
                       )}
-                    </p>
+                    </div>
 
-                    <div className="mt-2 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateQuantity(item.id, item.quantity - 1)
-                          }
-                          className="flex h-7 w-7 items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-50 active:bg-gray-100"
-                          aria-label="Azalt"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="w-6 text-center text-sm">
-                          {item.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateQuantity(item.id, item.quantity + 1)
-                          }
-                          className="flex h-7 w-7 items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-50 active:bg-gray-100"
-                          aria-label="Artır"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      </div>
+                    <div className="flex flex-1 flex-col">
+                      <Link
+                        href={`/urun/${item.productSlug}`}
+                        onClick={() => setOpen(false)}
+                        className="line-clamp-2 text-sm font-medium text-gray-800 hover:text-brand-navy"
+                      >
+                        {item.productName}
+                      </Link>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        {UNIT_LABELS[item.unitType] ?? item.unitType}
+                        {item.piecesPerUnit
+                          ? ` (${item.piecesPerUnit} adet)`
+                          : ""}{" "}
+                        · {formatPrice(item.effectiveUnitPrice)}{" "}
+                        <span className="text-gray-400">(KDV hariç)</span>
+                        {isDiscounted && (
+                          <span className="ml-1 text-green-600">
+                            (toplu indirim)
+                          </span>
+                        )}
+                      </p>
 
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-brand-navy">
-                          {formatPrice(effectiveUnitPrice * item.quantity)}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.id)}
-                          className="flex h-7 w-7 items-center justify-center text-gray-400 hover:text-red-500 active:text-red-600"
-                          aria-label="Kaldır"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                      <div className="mt-2 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity - 1)
+                            }
+                            className="flex h-7 w-7 items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+                            aria-label="Azalt"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="w-6 text-center text-sm">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity + 1)
+                            }
+                            className="flex h-7 w-7 items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+                            aria-label="Artır"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-brand-navy">
+                            {formatPrice(item.lineTotalExcludingVat)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(item.id)}
+                            className="flex h-7 w-7 items-center justify-center text-gray-400 hover:text-red-500 active:text-red-600"
+                            aria-label="Kaldır"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
                 );
               })}
             </div>
 
             <div className="mt-4 space-y-4 border-t border-gray-200 pt-4">
-              <div className="flex items-center justify-between text-base font-semibold">
-                <span>Toplam</span>
-                <span className="text-brand-navy">
-                  {formatPrice(totalPrice)}
-                </span>
-              </div>
-
               <div>
                 <label
                   htmlFor="customer-name"
@@ -203,6 +197,26 @@ export function CartSheet({ whatsappNumber }: CartSheetProps) {
                   onChange={(event) => setCustomerName(event.target.value)}
                   placeholder="Adınız Soyadınız"
                   className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-navy focus:outline-none focus:ring-1 focus:ring-brand-navy"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="customer-address"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Adres{" "}
+                  <span className="font-normal text-gray-400">
+                    (opsiyonel)
+                  </span>
+                </label>
+                <textarea
+                  id="customer-address"
+                  value={customerAddress}
+                  onChange={(event) => setCustomerAddress(event.target.value)}
+                  placeholder="Teslimat adresi"
+                  rows={2}
+                  className="mt-1 w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-navy focus:outline-none focus:ring-1 focus:ring-brand-navy"
                 />
               </div>
 
@@ -228,20 +242,70 @@ export function CartSheet({ whatsappNumber }: CartSheetProps) {
 
               <TurnstileWidget onVerified={setIsVerified} />
 
-              <Button
-                variant="accent"
-                size="lg"
-                className="w-full gap-2"
+              {/* WhatsApp'a Gönder — KDV HARİÇ toplamı gösterir, WhatsApp
+                  yeşilinde. Sipariş/teklif talebi bu buton ile iletilir. */}
+              <button
+                type="button"
                 disabled={!canSend}
                 onClick={handleSendToWhatsapp}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-green-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-600 disabled:pointer-events-none disabled:opacity-50"
               >
-                WhatsApp&apos;a Gönder
-              </Button>
+                WhatsApp&apos;a Gönder — {formatPrice(totalPriceExcludingVat)}{" "}
+                <span className="font-normal">(KDV hariç)</span>
+              </button>
               {turnstileRequired && !isVerified && (
                 <p className="text-center text-xs text-gray-400">
                   Göndermek için yukarıdaki doğrulamayı tamamlayın.
                 </p>
               )}
+
+              {/* KDV dökümü — her ürünün KDV'si ayrı satırda, altında
+                  KDV dahil genel toplamı gösteren Online Öde butonu. */}
+              <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+                <p className="text-xs font-medium text-gray-500">
+                  Ürün Bazında KDV
+                </p>
+                <div className="mt-2 space-y-1">
+                  {itemsWithVat.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between text-xs text-gray-600"
+                    >
+                      <span className="line-clamp-1 pr-2">
+                        {item.productName} ({UNIT_LABELS[item.unitType] ?? item.unitType} x{" "}
+                        {item.quantity}) — KDV %{item.vatRate ?? 20}
+                      </span>
+                      <span className="shrink-0 font-medium text-gray-700">
+                        {formatPrice(item.vatAmount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-2 flex items-center justify-between border-t border-gray-200 pt-2 text-xs text-gray-500">
+                  <span>Toplam KDV</span>
+                  <span className="font-medium text-gray-700">
+                    {formatPrice(totalVatAmount)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Online Öde — KDV DAHİL genel toplamı gösterir. Şimdilik
+                  devre dışı; iyzico entegrasyonu tamamlanınca aktif olacak. */}
+              <div>
+                <button
+                  type="button"
+                  disabled
+                  className="flex w-full items-center justify-center gap-2 rounded-md bg-brand-navy px-4 py-3 text-sm font-semibold text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  Online Öde — {formatPrice(totalPriceIncludingVat)}{" "}
+                  <span className="font-normal">(KDV dahil)</span>
+                </button>
+                <p className="mt-1.5 text-center text-xs text-gray-400">
+                  Online ödeme yakında aktif olacak (iyzico entegrasyonu).
+                </p>
+              </div>
             </div>
           </>
         )}

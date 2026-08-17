@@ -8,7 +8,8 @@ export interface CartItem {
   imageUrl: string | null;
   unitType: string;
   piecesPerUnit?: number;
-  price: number; // temel (kademesiz) birim fiyat
+  price: number; // temel (kademesiz), KDV HARİÇ birim fiyat
   bulkTiers?: BulkTierLike[];
+  vatRate?: number; // % — yoksa DEFAULT_VAT_RATE (20) kabul edilir
   quantity: number;
 }

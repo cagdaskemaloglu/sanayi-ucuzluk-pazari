@@ -134,6 +134,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               imageUrl={imageUrl}
               pricingOptions={product.pricingOptions}
               isOutOfStock={isOutOfStock}
+              vatRate={product.vatRate}
             />
           </div>
         </div>

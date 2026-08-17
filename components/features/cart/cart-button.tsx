@@ -12,7 +12,7 @@ export function CartButton() {
       variant="outline"
       size="icon"
       onClick={() => setOpen(true)}
-      className="relative border-white/20 bg-white/10 text-white hover:bg-white/20"
+      className="relative border-gray-300 bg-white text-brand-navy hover:bg-gray-50"
       aria-label="Sepeti aç"
     >
       <ShoppingCart className="h-5 w-5" />
