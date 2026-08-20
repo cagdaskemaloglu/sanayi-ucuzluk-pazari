@@ -8,6 +8,7 @@ interface SiteFooterProps {
 }
 
 const LEGAL_LINKS = [
+  { href: "/blog", label: "Blog" },
   { href: "/iletisim", label: "İletişim" },
   { href: "/kvkk", label: "KVKK Aydınlatma Metni" },
   { href: "/gizlilik-politikasi", label: "Gizlilik Politikası" },

@@ -1,12 +1,17 @@
 import { client } from "./client";
 import {
   CATEGORIES_QUERY,
+  CATEGORY_BY_SLUG_QUERY,
   PRODUCTS_QUERY,
   FEATURED_PRODUCTS_QUERY,
   PRODUCT_BY_SLUG_QUERY,
   SITE_SETTINGS_QUERY,
+  POSTS_QUERY,
+  POST_BY_SLUG_QUERY,
 } from "./queries";
 import type {
+  BlogPostDetail,
+  BlogPostListItem,
   Category,
   ProductDetail,
   ProductListItem,
@@ -21,6 +26,12 @@ const FETCH_OPTIONS = { cache: "no-store" as const };
 
 export async function getCategories(): Promise<Category[]> {
   return client.fetch(CATEGORIES_QUERY, {}, FETCH_OPTIONS);
+}
+
+export async function getCategoryBySlug(
+  slug: string
+): Promise<Category | null> {
+  return client.fetch(CATEGORY_BY_SLUG_QUERY, { slug }, FETCH_OPTIONS);
 }
 
 export async function getProducts(params?: {
@@ -49,4 +60,14 @@ export async function getProductBySlug(
 
 export async function getSiteSettings(): Promise<SiteSettings | null> {
   return client.fetch(SITE_SETTINGS_QUERY, {}, FETCH_OPTIONS);
+}
+
+export async function getBlogPosts(): Promise<BlogPostListItem[]> {
+  return client.fetch(POSTS_QUERY, {}, FETCH_OPTIONS);
+}
+
+export async function getBlogPostBySlug(
+  slug: string
+): Promise<BlogPostDetail | null> {
+  return client.fetch(POST_BY_SLUG_QUERY, { slug }, FETCH_OPTIONS);
 }

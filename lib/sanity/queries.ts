@@ -5,7 +5,18 @@ export const CATEGORIES_QUERY = groq`
     _id,
     title,
     "slug": slug.current,
-    order
+    order,
+    description
+  }
+`;
+
+export const CATEGORY_BY_SLUG_QUERY = groq`
+  *[_type == "category" && slug.current == $slug][0] {
+    _id,
+    title,
+    "slug": slug.current,
+    order,
+    description
   }
 `;
 
@@ -74,6 +85,32 @@ export const SITE_SETTINGS_QUERY = groq`
     aboutTitle,
     aboutText,
     aboutImages,
-    catalogDownloadEnabled
+    catalogDownloadEnabled,
+    instagramUrl,
+    googleSiteVerification
+  }
+`;
+
+export const POSTS_QUERY = groq`
+  *[_type == "post" && defined(publishedAt) && publishedAt <= now()]
+    | order(publishedAt desc) {
+    _id,
+    title,
+    "slug": slug.current,
+    excerpt,
+    coverImage,
+    publishedAt
+  }
+`;
+
+export const POST_BY_SLUG_QUERY = groq`
+  *[_type == "post" && slug.current == $slug][0] {
+    _id,
+    title,
+    "slug": slug.current,
+    excerpt,
+    coverImage,
+    publishedAt,
+    body
   }
 `;

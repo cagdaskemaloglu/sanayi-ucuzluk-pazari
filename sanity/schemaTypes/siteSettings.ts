@@ -139,6 +139,24 @@ export const siteSettingsType = defineType({
       of: [{ type: "image", options: { hotspot: true } }],
       validation: (Rule) => Rule.max(6),
     }),
+    defineField({
+      name: "instagramUrl",
+      title: "Instagram Linki",
+      description:
+        "Tam Instagram profil linkin (örn. https://instagram.com/kullaniciadi). " +
+        "Boş bırakılırsa header üstündeki çubukta Instagram ikonu görünmez.",
+      type: "url",
+    }),
+    defineField({
+      name: "googleSiteVerification",
+      title: "Google Search Console Doğrulama Kodu",
+      description:
+        "Google Search Console'da 'HTML etiketi' doğrulama yöntemini " +
+        "seçtiğinde sana verilen content=\"...\" değerini buraya yapıştır " +
+        "(sadece kod, <meta> etiketinin tamamını değil). DNS ile doğrulama " +
+        "yapacaksan bu alana gerek yok.",
+      type: "string",
+    }),
   ],
   preview: {
     prepare() {

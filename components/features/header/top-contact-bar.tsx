@@ -1,4 +1,4 @@
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Instagram, Mail, MapPin, Phone } from "lucide-react";
 import { SITE_CONFIG } from "@/lib/constants";
 import type { SiteSettings } from "@/lib/sanity/types";
 
@@ -13,9 +13,10 @@ export function TopContactBar({ siteSettings }: TopContactBarProps) {
   const email = siteSettings?.email || SITE_CONFIG.email;
   const phone = siteSettings?.phone || SITE_CONFIG.phone;
   const address = siteSettings?.address || SITE_CONFIG.address;
+  const instagramUrl = siteSettings?.instagramUrl;
 
-  // Üçü de boşsa çubuğu hiç gösterme.
-  if (!email && !phone && !address) {
+  // Hiçbiri yoksa çubuğu hiç gösterme.
+  if (!email && !phone && !address && !instagramUrl) {
     return null;
   }
 
@@ -39,6 +40,17 @@ export function TopContactBar({ siteSettings }: TopContactBarProps) {
             <MapPin className="h-3.5 w-3.5 shrink-0" />
             {address}
           </span>
+        )}
+        {instagramUrl && (
+          <a
+            href={instagramUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram"
+            className="flex items-center gap-1.5 transition-colors hover:text-brand-accent"
+          >
+            <Instagram className="h-3.5 w-3.5 shrink-0" />
+          </a>
         )}
       </div>
     </div>

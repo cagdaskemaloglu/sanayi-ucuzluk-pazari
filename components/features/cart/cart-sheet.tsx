@@ -290,22 +290,17 @@ export function CartSheet({ whatsappNumber }: CartSheetProps) {
                 </div>
               </div>
 
-              {/* Online Öde — KDV DAHİL genel toplamı gösterir. Şimdilik
-                  devre dışı; iyzico entegrasyonu tamamlanınca aktif olacak. */}
-              <div>
-                <button
-                  type="button"
-                  disabled
-                  className="flex w-full items-center justify-center gap-2 rounded-md bg-brand-navy px-4 py-3 text-sm font-semibold text-white transition-colors disabled:pointer-events-none disabled:opacity-50"
-                >
-                  <CreditCard className="h-4 w-4" />
-                  Online Öde — {formatPrice(totalPriceIncludingVat)}{" "}
-                  <span className="font-normal">(KDV dahil)</span>
-                </button>
-                <p className="mt-1.5 text-center text-xs text-gray-400">
-                  Online ödeme yakında aktif olacak (iyzico entegrasyonu).
-                </p>
-              </div>
+              {/* Online Öde — KDV DAHİL genel toplamı gösterir, /odeme
+                  sayfasına yönlendirir (iyzico Checkout Form akışı). */}
+              <Link
+                href="/odeme"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-brand-navy px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-navy-dark"
+              >
+                <CreditCard className="h-4 w-4" />
+                Online Öde — {formatPrice(totalPriceIncludingVat)}{" "}
+                <span className="font-normal">(KDV dahil)</span>
+              </Link>
             </div>
           </>
         )}

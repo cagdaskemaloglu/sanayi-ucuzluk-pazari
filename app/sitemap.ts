@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getCategories, getProducts } from "@/lib/sanity/fetchers";
+import { getBlogPosts, getCategories, getProducts } from "@/lib/sanity/fetchers";
 import { SITE_CONFIG } from "@/lib/constants";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -7,11 +7,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // boş listelerle devam et.
   let categories: Awaited<ReturnType<typeof getCategories>> = [];
   let products: Awaited<ReturnType<typeof getProducts>> = [];
+  let posts: Awaited<ReturnType<typeof getBlogPosts>> = [];
 
   try {
-    [categories, products] = await Promise.all([
+    [categories, products, posts] = await Promise.all([
       getCategories(),
       getProducts(),
+      getBlogPosts(),
     ]);
   } catch {
     // sessizce boş devam
@@ -23,6 +25,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 1,
+    },
+    {
+      url: `${SITE_CONFIG.url}/blog`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.5,
     },
     {
       url: `${SITE_CONFIG.url}/iletisim`,
@@ -50,8 +58,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
+  // Kategoriler artık kendi gerçek URL'lerine sahip (/kategori/[slug]).
   const categoryRoutes: MetadataRoute.Sitemap = categories.map((category) => ({
-    url: `${SITE_CONFIG.url}/?category=${category.slug}`,
+    url: `${SITE_CONFIG.url}/kategori/${category.slug}`,
     lastModified: new Date(),
     changeFrequency: "weekly",
     priority: 0.6,
@@ -64,5 +73,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticRoutes, ...categoryRoutes, ...productRoutes];
+  const postRoutes: MetadataRoute.Sitemap = posts.map((post) => ({
+    url: `${SITE_CONFIG.url}/blog/${post.slug}`,
+    lastModified: new Date(post.publishedAt),
+    changeFrequency: "monthly",
+    priority: 0.4,
+  }));
+
+  return [...staticRoutes, ...categoryRoutes, ...productRoutes, ...postRoutes];
 }

@@ -35,6 +35,9 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: title,
     },
     icons: faviconUrl ? { icon: faviconUrl } : undefined,
+    verification: siteSettings?.googleSiteVerification
+      ? { google: siteSettings.googleSiteVerification }
+      : undefined,
   };
 }
 

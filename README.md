@@ -697,3 +697,349 @@ sayfadaki flex satırında "Katalog İndir" linkiyle dikey hizasının
 kaymasına neden oluyordu. `mb-4` bileşenden kaldırıldı, boşluk
 sorumluluğu tamamen üst bileşene (`app/(site)/page.tsx`) bırakıldı.
 Artık ikisi de aynı yatay hizada.
+
+## Güncelleme — SEO & Trafik (Kategori Sayfaları & Blog)
+
+### 1. Kategori Sayfaları Kendi URL'lerine Kavuştu
+
+Kategoriler artık `/?category=slug` filtresi yerine **kendi gerçek
+sayfalarına** sahip: `/kategori/[slug]`. Bu, Google'ın kategori
+sayfalarını doğru indekslemesi için önemli bir değişiklik.
+
+- Studio'da her kategoriye **"Açıklama (SEO)"** alanı eklendi — kategori
+  sayfasının başlığının altında görünür, aynı zamanda Google arama
+  sonucundaki açıklama olarak kullanılır (1-2 cümle yeterli)
+- Ana sayfadaki kategori menüsü artık bu yeni sayfalara yönlendiriyor
+- Ana sayfa artık sadece "Tümü ürünler + arama" görünümü (kategori
+  filtresi kendi sayfasına taşındığı için `?category=` parametresi
+  kaldırıldı)
+- `/sitemap.xml`'deki kategori linkleri yeni URL yapısına güncellendi
+
+**Not:** Eğer eskiden paylaştığın `/?category=xxx` linkleri varsa artık
+kategori filtrelemez (ana sayfa gibi tüm ürünleri gösterir). Yeni linkler
+`/kategori/xxx` formatında.
+
+### 2. Blog / Bilgi Bölümü
+
+Yeni bir içerik türü: **Blog Yazısı**. Studio'da menüden ekleyip
+yayınlayabilirsin:
+
+- Başlık, Slug, Kapak Fotoğrafı, Kısa Özet
+- Yayın Tarihi (ileri bir tarih girersen o tarihe kadar sitede görünmez —
+  ileriye dönük planlama için kullanışlı)
+- İçerik: zengin metin editörü (başlıklar, paragraflar, listeler,
+  alıntılar, görsel ekleyebilme)
+
+Sayfalar:
+- `/blog` — tüm yayınlanmış yazıların listesi (kapak fotoğrafı, başlık, özet, tarih)
+- `/blog/[slug]` — yazının tam içeriği
+
+Footer'a "Blog" linki eklendi. Blog yazıları da `/sitemap.xml`'e dahil.
+
+### Test
+
+1. `npm install` (yeni paket: `@portabletext/react`)
+2. Studio'da bir kategoriye "Açıklama (SEO)" yaz, Publish et → ana
+   sayfadaki kategori menüsünden o kategoriye tıkla → artık
+   `/kategori/slug` adresine gitmeli, açıklaman başlığın altında görünmeli
+3. Studio'da yeni bir "Blog Yazısı" oluştur (başlık, kapak fotoğrafı,
+   özet, en az bir paragraf içerik), Publish et
+4. `/blog` adresine git → yazın kartlarda görünmeli, tıklayınca içeriğin
+   doğru render olduğunu kontrol et
+5. Footer'daki "Blog" linkine tıkla → `/blog`'a gitmeli
+6. `/sitemap.xml` içinde `/kategori/...` ve `/blog/...` adreslerinin
+   listelendiğini doğrula
+7. `npm run build` çalıştırıp hatasız tamamlandığını doğrula
+
+## Güncelleme — İyzico Entegrasyonu (Online Öde)
+
+### Nasıl çalışıyor
+
+Kart bilgileri hiçbir zaman bizim sunucumuzdan geçmiyor — iyzico'nun
+kendi barındırdığı, PCI-DSS uyumlu **"Checkout Form"** kullanılıyor:
+
+1. Sepette "Online Öde"ye tıklayınca `/odeme` sayfasına gidilir
+2. Kullanıcı fatura/teslimat bilgilerini girer (Ad, Soyad, E-posta,
+   Telefon, **TC Kimlik No**, Şehir, Adres) — TC Kimlik No, iyzico'nun
+   kimlik doğrulama için zorunlu tuttuğu bir alan
+3. Bu bilgiler `/api/odeme/baslat` route'una gönderilir, orada iyzico'nun
+   `checkoutFormInitialize` API'si çağrılır
+4. Dönen form iyzico'nun kendi arayüzünü sayfaya gömer — kullanıcı kart
+   bilgilerini doğrudan iyzico'ya girer
+5. Ödeme tamamlanınca iyzico kullanıcıyı `/api/odeme/sonuc`'a yönlendirir,
+   biz orada ödemenin gerçekten başarılı olduğunu iyzico'ya tekrar
+   sorarak (`checkoutForm.retrieve`) doğrularız — callback'teki bilgiye
+   asla körü körüne güvenmiyoruz
+6. Başarılıysa `/odeme/basarili`'ya yönlendirilir, sepet otomatik
+   temizlenir; başarısızsa `/odeme/basarisiz`'a yönlendirilir, sepet
+   olduğu gibi kalır
+
+### Kurulum — Sandbox (Test) Hesabı
+
+1. [sandbox-merchant.iyzipay.com](https://sandbox-merchant.iyzipay.com)
+   adresine git, ücretsiz bir test hesabı oluştur
+2. Giriş yaptıktan sonra **Ayarlar → API Anahtarları** kısmından
+   **API Key** ve **Secret Key**'i kopyala
+3. `.env.local`'e ekle:
+
+```
+IYZICO_API_KEY=sandbox-xxxxxxxxxxxx
+IYZICO_SECRET_KEY=sandbox-xxxxxxxxxxxx
+IYZICO_BASE_URL=https://sandbox-api.iyzipay.com
+```
+
+4. `npm install` (yeni paket: `iyzipay`)
+5. Dev server'ı yeniden başlat
+
+### Test
+
+1. Sepete bir ürün ekle, sepet popover'ında "Online Öde"ye tıkla
+2. `/odeme` formunu doldur — **TC Kimlik No için sandbox'ta gerçek bir
+   numara girmene gerek yok**, iyzico'nun test ortamı algoritmik olarak
+   geçerli görünen herhangi bir 11 haneli sayıyı kabul eder (örn.
+   `11111111110`)
+3. "Ödemeye Geç"e tıkla → iyzico'nun test ödeme formu sayfada belirmeli
+4. İyzico'nun sandbox test kart numaralarından birini kullan (güncel
+   liste: [iyzico sandbox test kartları](https://docs.iyzico.com/en/testing/test-cards) —
+   örn. `5528790000000008`, son kullanma tarihi ileri bir tarih, CVC `123`)
+5. Ödemeyi tamamla → `/odeme/basarili`'ya yönlenmeli, sepet boşalmalı
+6. Kasıtlı olarak geçersiz bir test kartıyla dene → `/odeme/basarisiz`'a
+   yönlenmeli, sepet hâlâ dolu olmalı
+
+### Canlıya geçerken
+
+1. [merchant.iyzipay.com](https://merchant.iyzipay.com) üzerinden gerçek
+   (production) iyzico hesabı başvurusu yap — bu genelde işletme
+   evrakları gerektirir ve onay süreci alır
+2. Onaylandıktan sonra gerçek **API Key** / **Secret Key**'i al
+3. Vercel ortam değişkenlerinde:
+   ```
+   IYZICO_API_KEY=<gerçek-api-key>
+   IYZICO_SECRET_KEY=<gerçek-secret-key>
+   IYZICO_BASE_URL=https://api.iyzipay.com
+   ```
+4. Redeploy et
+
+### Bilinen sınırlamalar / geliştirilebilecek noktalar
+
+- `/odeme/basarili` sayfasındaki "WhatsApp'tan Bize Ulaşın" butonu
+  şimdilik `lib/constants.ts`'teki placeholder numarayı kullanıyor
+  (Sanity'deki gerçek numarayı değil) — bu sayfa client component
+  olduğu için siteSettings'i doğrudan çekemiyor. İstersen bunu gerçek
+  numarayla eşleştirecek küçük bir iyileştirme yapabiliriz.
+- Ödeme başarılı olduğunda şu an sadece kullanıcıya bilgi veriliyor;
+  sipariş kaydı bir veritabanına yazılmıyor (henüz bir veritabanımız
+  yok — bu proje şu ana kadar sipariş kaydını WhatsApp konuşması
+  üzerinden tutuyordu). İstersen ileride basit bir sipariş kaydı
+  (Sanity'de "order" içerik tipi gibi) ekleyebiliriz.
+- Fatura/teslimat formundaki TC Kimlik No alanı yalnızca temel format
+  kontrolü (11 hane) yapıyor, gerçek bir algoritmik doğrulama
+  (checksum) yapmıyor — geçersiz ama 11 haneli bir numara iyzico
+  tarafında reddedilebilir, bu normal.
+
+## Düzeltme — iyzipay "ENOENT ... resources" Hatası
+
+`iyzipay` paketi kendi `resources` klasörünü çalışma zamanında dosya
+sisteminden dinamik okuyor. Next.js'in webpack'i bunu normal şekilde
+paketleyince (`.next` çıktısına gömünce) bu dinamik okuma bozuluyor ve
+`/odeme` sayfasında form gönderirken şu hatayla karşılaşılıyordu:
+
+```
+Error: ENOENT: no such file or directory, scandir
+'.../.next/server/vendor-chunks/resources'
+```
+
+**Çözüm:** `next.config.mjs`'e `iyzipay`'i
+`experimental.serverComponentsExternalPackages` listesine eklendi —
+bu, Next.js'e bu paketi paketlemeden (native `require` ile) kullanmasını
+söylüyor, böylece paketin gerçek dosya yapısı korunuyor.
+
+### Bu düzeltmeden sonra yapman gerekenler
+
+```bash
+rm -rf .next
+npm run dev
+```
+
+(`.next` klasörünü silmek önemli — eski, bozuk webpack cache'i temizler.)
+Sonra `/odeme` sayfasında formu tekrar dene.
+
+## Güncelleme — Ödeme Sonrası Yönlendirme Düzeltmesi & Sipariş Kaydı
+
+### 1. Kritik düzeltme: POST → Redirect 307 hatası
+
+Başarılı test ödemesinden sonra karşılaştığın hatanın nedeni büyük
+ihtimalle şuydu: iyzico, ödeme tamamlanınca tarayıcıyı `/api/odeme/sonuc`
+adresimize bir **POST** isteğiyle yönlendiriyor. Biz de oradan
+`/odeme/basarili`'ya yönlendirme yapıyorduk — ama Next.js'te (ve genel
+olarak HTTP'de) bir POST isteğine yapılan yönlendirme **varsayılan
+olarak 307** statüsüyle döner, bu da tarayıcının hedef adrese de **POST**
+atmaya çalışmasına neden olur. `/odeme/basarili` normal bir sayfa (GET
+bekler), bu yüzden hataya düşüyordu.
+
+**Düzeltme:** `/api/odeme/sonuc` artık tüm yönlendirmelerde açıkça
+**303 (See Other)** statüsü kullanıyor — bu, tarayıcıya "hedefe GET ile
+git" der. iyzico panelinde ayarlaman gereken bir şey yoktu, sorun
+tamamen bizim kod tarafımızdaydı.
+
+### 2. Sipariş Kaydı (Sanity'de "Sipariş" içerik tipi)
+
+Artık her ödeme denemesi Sanity'e bir **Sipariş** belgesi olarak
+kaydediliyor:
+
+- Ödeme başlatıldığında (`/odeme` formunu gönderdiğinde) **"Beklemede"**
+  durumunda bir kayıt oluşuyor — müşteri bilgileri, ürünler, tutarlar
+- Ödeme sonucu doğrulandığında bu kayıt **"Ödendi"** veya **"Başarısız"**
+  olarak güncelleniyor
+- Studio'daki sol menüden **"Sipariş"** listesine girip tüm siparişleri,
+  müşteri bilgilerini ve ürün detaylarını görebilirsin
+
+**Bunun çalışması için `.env.local`'e bir Sanity yazma token'ı
+eklemen gerekiyor** (daha önce bu alan boştu, opsiyoneldi):
+
+1. [sanity.io/manage](https://www.sanity.io/manage) → projen → **API** → **Tokens** → **Add API token**
+2. İsim ver (örn. "Sipariş Kayıtları"), yetki olarak **Editor** seç
+3. Oluşan token'ı `.env.local`'e ekle:
+   ```
+   SANITY_API_TOKEN=sk...
+   ```
+4. Dev server'ı yeniden başlat
+
+**Token eklemezsen ne olur?** Ödeme akışı yine sorunsuz çalışır, sadece
+sipariş Sanity'e kaydedilmez (sessizce atlanır, hata vermez).
+
+### 3. WhatsApp Numarası Artık Gerçek
+
+`/odeme/basarili` sayfasındaki "WhatsApp'tan Bize Ulaşın" butonu artık
+Sanity Site Ayarları'ndaki gerçek numarayı kullanıyor (önceden
+placeholder'dı).
+
+### 4. TC Kimlik No Artık Gerçekten Doğrulanıyor
+
+Form artık sadece "11 hane mi" diye bakmıyor, resmi T.C. Kimlik No
+kontrol basamağı algoritmasını da uyguluyor. **Sandbox'ta test ederken
+rastgele 11 haneli bir sayı artık kabul edilmeyecek** — algoritmik
+olarak geçerli bir test numarası kullanman gerekiyor, örneğin:
+
+```
+10000000146
+```
+
+(Bu gerçek bir kişiye ait değil, sadece kontrol basamağı algoritmasını
+geçen, yaygın kullanılan bir test değeri.)
+
+### Test
+
+1. `.env.local`'e `SANITY_API_TOKEN` ekle (yukarıdaki adımlar), dev
+   server'ı yeniden başlat
+2. `rm -rf .next && npm run dev`
+3. Sepete ürün ekle → Online Öde → formu doldur (TC Kimlik No için
+   `10000000146` kullan) → sandbox test kartıyla öde
+4. Bu sefer `/odeme/basarili` sayfası hatasız açılmalı, sepet boşalmalı
+5. Studio'da **Sipariş** listesine git → yeni siparişin **"Ödendi"**
+   durumunda göründüğünü, müşteri/ürün bilgilerinin doğru geldiğini
+   kontrol et
+6. Kasıtlı olarak ödemeyi iptal et / geçersiz kartla dene →
+   `/odeme/basarisiz`'a gitmeli, Studio'daki kayıt **"Başarısız"**
+   olarak güncellenmeli
+
+## Güncelleme — Google Search Console Hazırlığı
+
+### Şimdi yapılan (kod tarafı)
+
+- Site Ayarları'na **"Google Search Console Doğrulama Kodu"** alanı
+  eklendi — Google'ın verdiği doğrulama kodunu buraya yapıştırınca
+  otomatik olarak sitenin `<head>`'ine doğru meta etiketi ekleniyor
+- `/odeme` ve `/api` altındaki sayfalar `robots.txt`'te disallow edildi
+  (bunlar işlevsel/özel sayfalar, arama sonuçlarında çıkmamalı)
+- `/sitemap.xml` zaten tüm ürünleri, kategorileri, blog yazılarını ve
+  statik sayfaları içeriyor (Faz 7 ve sonrasında kuruldu)
+
+### ⚠️ Önce şunu tamamlaman gerekiyor
+
+Google Search Console, **gerçek ve herkese açık bir domain** gerektirir
+— localhost'u doğrulayamaz veya tarayamaz. Bu adımlara geçmeden önce
+README'deki **Faz 10** bölümünü tamamlayıp siteni Vercel + Cloudflare
+ile gerçek bir domain'de canlıya almış olman gerekiyor. Ayrıca:
+
+- Vercel ortam değişkenlerinde `NEXT_PUBLIC_SITE_URL`'in gerçek
+  domainine ayarlı olduğundan emin ol (bu, sitemap ve doğrulama
+  etiketinin doğru adresle çalışması için kritik)
+
+### Site canlıya alındıktan sonra — adım adım
+
+1. [search.google.com/search-console](https://search.google.com/search-console) adresine git, Google hesabınla giriş yap
+2. **Mülk Ekle** (Add Property) → iki seçenek çıkar:
+
+   **Seçenek A — Domain (önerilen, Cloudflare kullandığın için kolay):**
+   - "Domain" seçeneğine domainini yaz (örn. `sanayiucuzlukpazari.com`)
+   - Google sana bir TXT kaydı verir
+   - Cloudflare Dashboard → domainin → **DNS** → **Add record** →
+     Type: `TXT`, Name: `@`, Content: Google'ın verdiği değer → Save
+   - Search Console'a dön, **Doğrula**'ya tıkla (DNS yayılımı birkaç
+     dakika sürebilir)
+
+   **Seçenek B — URL Öneki (HTML etiketi ile, DNS'e dokunmadan):**
+   - "URL prefix" seçeneğine `https://senin-domainin.com` yaz
+   - Doğrulama yöntemi olarak **HTML tag**'i seç
+   - Sana verilen `<meta name="google-site-verification" content="XXXXX" />`
+     etiketindeki **sadece `content="..."` içindeki değeri** kopyala
+   - Sanity Studio → Site Ayarları → **"Google Search Console Doğrulama
+     Kodu"** alanına yapıştır, Publish et
+   - Sitenin canlı adresine git, sayfa kaynağını görüntüleyip
+     (View Page Source) `<head>` içinde bu etiketin göründüğünü
+     kontrol et
+   - Search Console'a dön, **Doğrula**'ya tıkla
+
+3. Doğrulandıktan sonra sol menüden **Sitemaps**'e git, alan kutusuna
+   sadece `sitemap.xml` yaz (tam URL'e gerek yok), **Gönder**
+4. Sol menüden **URL Denetimi** (URL Inspection) ile ana sayfanın
+   adresini yapıştır, **Dizine Ekleme İste** (Request Indexing) —
+   bu Google'ın siteni daha hızlı taramasını sağlar
+5. Aynı şekilde birkaç önemli ürün/kategori sayfası için de dizine
+   ekleme isteyebilirsin (hepsi için gerek yok, sitemap zaten hepsini
+   Google'a bildirir)
+
+### Ne kadar sürer?
+
+Google'ın siteni tarayıp arama sonuçlarında göstermesi genelde
+**birkaç gün ile birkaç hafta** arasında değişir — bu tamamen Google'ın
+kontrolünde, hızlandıramayız. "Dizine Ekleme İste" adımı süreci
+kısaltabilir ama garanti vermez.
+
+### Bonus (opsiyonel, istersen ayrıca kurabilirsin)
+
+- **Bing Webmaster Tools** ([bing.com/webmasters](https://www.bing.com/webmasters)) —
+  benzer bir süreç, Bing ve Yahoo aramalarında da çıkmak için. Search
+  Console doğrulamasını içe aktarabiliyor (tek tıkla), ekstra ayar
+  gerekmeyebilir.
+
+## Güncelleme — Üst Çubukta Instagram İkonu
+
+Header üstündeki ince bilgi çubuğuna (e-posta/telefon/adres) Instagram
+ikonu eklendi. Sanity Studio → Site Ayarları → **"Instagram Linki"**
+alanına tam profil linkini gir (örn. `https://instagram.com/kullaniciadi`),
+Publish et — ikon en sağda/sonda görünür, tıklanınca yeni sekmede
+Instagram'ı açar. Boş bırakırsan ikon hiç görünmez.
+
+### Test
+
+1. `npm run dev` → Studio'da Instagram Linki'ni gir, Publish et
+2. Ana sayfada üst çubukta Instagram ikonunun göründüğünü, tıklayınca
+   doğru profile gittiğini kontrol et
+3. Alanı boş bırakıp Publish et → ikon kaybolmalı, diğer bilgiler
+   (e-posta/telefon/adres) etkilenmemeli
+
+## Güncelleme — Üst Bilgi Çubuğuna Instagram İkonu
+
+Header üstündeki bilgi çubuğuna (e-posta/telefon/adres) Instagram ikonu
+eklendi. Sanity Studio → Site Ayarları → **"Instagram Linki"** alanına
+tam profil linkini (örn. `https://instagram.com/kullaniciadi`) yapıştırıp
+Publish edince çubukta ikon olarak görünür. Boş bırakılırsa hiç görünmez.
+
+### Test
+
+1. `npm run dev` → Studio'da Instagram Linki'ni doldur, Publish et
+2. Ana sayfada üst bilgi çubuğunda Instagram ikonunun diğer bilgilerin
+   yanında göründüğünü, tıklayınca yeni sekmede profile gittiğini kontrol et
+3. Linki boşalt, Publish et → ikon kaybolmalı, diğer bilgiler etkilenmemeli

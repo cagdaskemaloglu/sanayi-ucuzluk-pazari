@@ -19,6 +19,7 @@ export interface Category {
   title: string;
   slug: string;
   order?: number;
+  description?: string;
 }
 
 export interface ProductListItem {
@@ -58,4 +59,25 @@ export interface SiteSettings {
   aboutText?: string;
   aboutImages?: Image[];
   catalogDownloadEnabled?: boolean;
+  instagramUrl?: string;
+  googleSiteVerification?: string;
 }
+
+export interface BlogPostListItem {
+  _id: string;
+  title: string;
+  slug: string;
+  excerpt?: string;
+  coverImage?: Image;
+  publishedAt: string;
+}
+
+export interface BlogPostDetail extends BlogPostListItem {
+  // Sanity Portable Text — @portabletext/react ile render edilir.
+  body: PortableTextBlockLike[];
+}
+
+// Portable Text bloklarının tam tipini import etmek yerine (ekstra paket
+// bağımlılığı gerektirir), render katmanında @portabletext/react'in kendi
+// tiplerine güvenip burada gevşek bir tip kullanıyoruz.
+export type PortableTextBlockLike = Record<string, unknown>;

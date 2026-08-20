@@ -13,21 +13,19 @@ import {
 
 interface HomePageProps {
   searchParams: {
-    category?: string;
     q?: string;
   };
 }
 
 export default async function HomePage({ searchParams }: HomePageProps) {
-  const categorySlug = searchParams.category;
   const search = searchParams.q;
-  const isDefaultView = !categorySlug && !search;
+  const isDefaultView = !search;
 
   const [categories, products, featuredProducts, siteSettings] =
     await Promise.all([
       getCategories(),
-      getProducts({ categorySlug, search }),
-      // Öne çıkan ürünler yalnızca varsayılan (filtresiz) görünümde gösterilir.
+      getProducts({ search }),
+      // Öne çıkan ürünler yalnızca varsayılan (arama yapılmamış) görünümde gösterilir.
       isDefaultView ? getFeaturedProducts() : Promise.resolve([]),
       getSiteSettings(),
     ]);
@@ -40,11 +38,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     <div>
       {isDefaultView && <FeaturedProducts products={featuredProducts} />}
 
-      <CategoryNav
-        categories={categories}
-        activeCategory={categorySlug}
-        search={search}
-      />
+      {/* activeCategory verilmiyor → "Tümü" pill'i aktif görünür */}
+      <CategoryNav categories={categories} />
 
       <div className="mx-auto max-w-7xl px-4 py-6">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">

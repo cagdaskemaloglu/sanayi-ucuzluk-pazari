@@ -25,6 +25,16 @@ export const categoryType = defineType({
       type: "number",
       initialValue: 0,
     }),
+    defineField({
+      name: "description",
+      title: "Açıklama (SEO)",
+      description:
+        "Bu kategorinin kendi sayfasında (/kategori/...) başlığın altında " +
+        "gösterilir, ayrıca Google'da bu sayfanın arama sonucu açıklaması " +
+        "olarak kullanılır. 1-2 cümle yeterli.",
+      type: "text",
+      rows: 3,
+    }),
   ],
   preview: {
     select: { title: "title" },
