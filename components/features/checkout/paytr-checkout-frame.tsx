@@ -21,7 +21,9 @@ export function PaytrCheckoutFrame({ token }: PaytrCheckoutFrameProps) {
       <Script
         src="https://www.paytr.com/js/iframeResizer.min.js"
         strategy="afterInteractive"
-        onReady={() => window.iFrameResize?.({}, "#paytriframe")}
+        onReady={() => {
+          window.iFrameResize?.({}, "#paytriframe");
+        }}
       />
       <iframe
         id="paytriframe"
