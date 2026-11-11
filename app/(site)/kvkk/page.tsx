@@ -50,6 +50,13 @@ export default function KvkkPage() {
           kendi gizlilik politikası ve veri işleme esasları çerçevesinde bu
           platform tarafından da işlenebilir.
         </p>
+        <p>
+          Online ödeme yapmanız halinde ad-soyad, e-posta, telefon, adres ve
+          sipariş tutarı bilgileriniz, ödemenin gerçekleştirilebilmesi
+          amacıyla ödeme kuruluşu PayTR&apos;ye aktarılır. Kart bilgileriniz
+          doğrudan PayTR&apos;nin güvenli ödeme sayfasına girilir; tarafımızca
+          görülmez ve saklanmaz.
+        </p>
       </LegalSection>
 
       <LegalSection title="5. Kişisel Veri Toplamanın Yöntemi ve Hukuki Sebebi">

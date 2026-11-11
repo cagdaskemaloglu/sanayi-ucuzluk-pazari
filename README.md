@@ -619,7 +619,7 @@ boş bırakılırsa hiçbir şey bozulmaz, mevcut varsayılanlar kullanılır):
    kutucuğunu kapat, Publish et → ana sayfada buton kaybolmalı; tekrar
    aç → geri gelmeli
 
-## Güncelleme — KDV, Adres Alanı & Online Öde (iyzico'ya Hazırlık)
+## Güncelleme — KDV, Adres Alanı & Online Öde
 
 ### Ne değişti
 
@@ -635,10 +635,8 @@ boş bırakılırsa hiçbir şey bozulmaz, mevcut varsayılanlar kullanılır):
 - **Bu butonun altında ürün bazında KDV dökümü** listeleniyor (her ürün
   kendi satırında, KDV oranı ve tutarıyla), altında toplam KDV, en altta
   da **"Online Öde"** butonu — üzerinde **KDV DAHİL genel toplam** yazıyor.
-- **"Online Öde" şimdilik devre dışı** (gri, tıklanamaz) — "Online ödeme
-  yakında aktif olacak (iyzico entegrasyonu)" notu gösteriliyor. İyzico
-  hesabı/API bilgilerin hazır olduğunda bu butonu gerçek ödeme akışına
-  bağlayacağız.
+- **"Online Öde" butonu** `/odeme` sayfasına yönlendirir; ödeme akışı için
+  aşağıdaki "PayTR Entegrasyonu" bölümüne bak.
 - Katalog Excel dosyasına da KDV oranı ve KDV dahil fiyat sütunları eklendi.
 
 ### Test
@@ -751,197 +749,96 @@ Footer'a "Blog" linki eklendi. Blog yazıları da `/sitemap.xml`'e dahil.
    listelendiğini doğrula
 7. `npm run build` çalıştırıp hatasız tamamlandığını doğrula
 
-## Güncelleme — İyzico Entegrasyonu (Online Öde)
+## Güncelleme — PayTR Entegrasyonu (Online Öde)
+
+> iyzico ile anlaşma sağlanamadığı için ödeme altyapısı **PayTR (iFrame API)**
+> olarak değiştirildi. iyzico'ya ait tüm kod ve dokümantasyon kaldırıldı.
 
 ### Nasıl çalışıyor
 
-Kart bilgileri hiçbir zaman bizim sunucumuzdan geçmiyor — iyzico'nun
-kendi barındırdığı, PCI-DSS uyumlu **"Checkout Form"** kullanılıyor:
+Kart bilgileri hiçbir zaman bu sitenin sunucusundan veya sayfasından geçmez —
+PayTR'nin kendi barındırdığı ödeme formu (iframe) kullanılır:
 
-1. Sepette "Online Öde"ye tıklayınca `/odeme` sayfasına gidilir
-2. Kullanıcı fatura/teslimat bilgilerini girer (Ad, Soyad, E-posta,
-   Telefon, **TC Kimlik No**, Şehir, Adres) — TC Kimlik No, iyzico'nun
-   kimlik doğrulama için zorunlu tuttuğu bir alan
-3. Bu bilgiler `/api/odeme/baslat` route'una gönderilir, orada iyzico'nun
-   `checkoutFormInitialize` API'si çağrılır
-4. Dönen form iyzico'nun kendi arayüzünü sayfaya gömer — kullanıcı kart
-   bilgilerini doğrudan iyzico'ya girer
-5. Ödeme tamamlanınca iyzico kullanıcıyı `/api/odeme/sonuc`'a yönlendirir,
-   biz orada ödemenin gerçekten başarılı olduğunu iyzico'ya tekrar
-   sorarak (`checkoutForm.retrieve`) doğrularız — callback'teki bilgiye
-   asla körü körüne güvenmiyoruz
-6. Başarılıysa `/odeme/basarili`'ya yönlendirilir, sepet otomatik
-   temizlenir; başarısızsa `/odeme/basarisiz`'a yönlendirilir, sepet
-   olduğu gibi kalır
+1. Sepette "Online Öde" → `/odeme` sayfası. Müşteri Ad, Soyad, E-posta,
+   Telefon, Şehir ve Adres girer (**TC Kimlik No artık istenmiyor**).
+2. Tarayıcı sunucuya **sadece ürün, birim ve adet** gönderir. Tutarı, KDV'yi
+   ve toplu alım indirimini **sunucu Sanity'deki güncel fiyatlardan kendisi
+   hesaplar** (`lib/checkout/compute-lines.ts`) — istek değiştirilerek daha
+   ucuza ödeme başlatılamaz.
+3. `/api/odeme/baslat`, PayTR'den bir ödeme token'ı alır ve Sanity'ye
+   **"Beklemede"** durumunda bir Sipariş kaydı yazar.
+4. PayTR'nin güvenli ödeme formu sayfaya gömülür, müşteri kartıyla öder.
+5. PayTR ödeme sonucunu **sunucudan sunucuya** `/api/odeme/bildirim`
+   adresine bildirir. Hash doğrulanır, sipariş **"Ödendi"** veya
+   **"Başarısız"** yapılır ve PayTR'ye düz metin `OK` döndürülür.
+   Ödemenin alındığının tek güvenilir kanıtı budur.
+6. Müşteri `/odeme/basarili` (sepet temizlenir) veya `/odeme/basarisiz`
+   sayfasına yönlendirilir. Bu sayfalar sadece bilgilendiricidir.
 
-### Kurulum — Sandbox (Test) Hesabı
+### Kurulum
 
-1. [sandbox-merchant.iyzipay.com](https://sandbox-merchant.iyzipay.com)
-   adresine git, ücretsiz bir test hesabı oluştur
-2. Giriş yaptıktan sonra **Ayarlar → API Anahtarları** kısmından
-   **API Key** ve **Secret Key**'i kopyala
-3. `.env.local`'e ekle:
+1. PayTR Mağaza Paneli → **Destek & Kurulum → Bilgi** sayfasından üç değeri al:
+   Mağaza No, Mağaza Parolası, Mağaza Gizli Anahtarı.
+2. `.env.local`'e ekle:
 
 ```
-IYZICO_API_KEY=sandbox-xxxxxxxxxxxx
-IYZICO_SECRET_KEY=sandbox-xxxxxxxxxxxx
-IYZICO_BASE_URL=https://sandbox-api.iyzipay.com
+PAYTR_MERCHANT_ID=...        # Mağaza No
+PAYTR_MERCHANT_KEY=...       # Mağaza Parolası
+PAYTR_MERCHANT_SALT=...      # Mağaza Gizli Anahtarı
+PAYTR_TEST_MODE=1            # canlıya geçince 0
+SANITY_API_TOKEN=...         # Editor yetkili token (sipariş kaydı için)
 ```
 
-4. `npm install` (yeni paket: `iyzipay`)
-5. Dev server'ı yeniden başlat
+3. `npm install`, `rm -rf .next`, dev server'ı yeniden başlat.
 
-### Test
+> **Sanity token'ı artık daha önemli:** `SANITY_API_TOKEN` tanımlıysa ama sipariş
+> kaydı yazılamazsa ödeme **başlatılmaz** (kayıtsız para tahsil edilmesin diye).
+> Hiç tanımlı değilse sipariş kaydı tutulmaz ve ödeme yine çalışır — ama
+> ödemeleri sadece PayTR panelinden görürsün.
 
-1. Sepete bir ürün ekle, sepet popover'ında "Online Öde"ye tıkla
-2. `/odeme` formunu doldur — **TC Kimlik No için sandbox'ta gerçek bir
-   numara girmene gerek yok**, iyzico'nun test ortamı algoritmik olarak
-   geçerli görünen herhangi bir 11 haneli sayıyı kabul eder (örn.
-   `11111111110`)
-3. "Ödemeye Geç"e tıkla → iyzico'nun test ödeme formu sayfada belirmeli
-4. İyzico'nun sandbox test kart numaralarından birini kullan (güncel
-   liste: [iyzico sandbox test kartları](https://docs.iyzico.com/en/testing/test-cards) —
-   örn. `5528790000000008`, son kullanma tarihi ileri bir tarih, CVC `123`)
-5. Ödemeyi tamamla → `/odeme/basarili`'ya yönlenmeli, sepet boşalmalı
-6. Kasıtlı olarak geçersiz bir test kartıyla dene → `/odeme/basarisiz`'a
-   yönlenmeli, sepet hâlâ dolu olmalı
+### ⚠️ Bildirim URL'sini PayTR panelinde tanımla (zorunlu)
 
-### Canlıya geçerken
+PayTR, ödeme sonucunu **her istekte gönderdiğimiz bir adrese değil, panelde
+tanımlı tek bir "Bildirim URL"ine** yollar:
 
-1. [merchant.iyzipay.com](https://merchant.iyzipay.com) üzerinden gerçek
-   (production) iyzico hesabı başvurusu yap — bu genelde işletme
-   evrakları gerektirir ve onay süreci alır
-2. Onaylandıktan sonra gerçek **API Key** / **Secret Key**'i al
-3. Vercel ortam değişkenlerinde:
-   ```
-   IYZICO_API_KEY=<gerçek-api-key>
-   IYZICO_SECRET_KEY=<gerçek-secret-key>
-   IYZICO_BASE_URL=https://api.iyzipay.com
-   ```
-4. Redeploy et
-
-### Bilinen sınırlamalar / geliştirilebilecek noktalar
-
-- `/odeme/basarili` sayfasındaki "WhatsApp'tan Bize Ulaşın" butonu
-  şimdilik `lib/constants.ts`'teki placeholder numarayı kullanıyor
-  (Sanity'deki gerçek numarayı değil) — bu sayfa client component
-  olduğu için siteSettings'i doğrudan çekemiyor. İstersen bunu gerçek
-  numarayla eşleştirecek küçük bir iyileştirme yapabiliriz.
-- Ödeme başarılı olduğunda şu an sadece kullanıcıya bilgi veriliyor;
-  sipariş kaydı bir veritabanına yazılmıyor (henüz bir veritabanımız
-  yok — bu proje şu ana kadar sipariş kaydını WhatsApp konuşması
-  üzerinden tutuyordu). İstersen ileride basit bir sipariş kaydı
-  (Sanity'de "order" içerik tipi gibi) ekleyebiliriz.
-- Fatura/teslimat formundaki TC Kimlik No alanı yalnızca temel format
-  kontrolü (11 hane) yapıyor, gerçek bir algoritmik doğrulama
-  (checksum) yapmıyor — geçersiz ama 11 haneli bir numara iyzico
-  tarafında reddedilebilir, bu normal.
-
-## Düzeltme — iyzipay "ENOENT ... resources" Hatası
-
-`iyzipay` paketi kendi `resources` klasörünü çalışma zamanında dosya
-sisteminden dinamik okuyor. Next.js'in webpack'i bunu normal şekilde
-paketleyince (`.next` çıktısına gömünce) bu dinamik okuma bozuluyor ve
-`/odeme` sayfasında form gönderirken şu hatayla karşılaşılıyordu:
+PayTR Mağaza Paneli → **Destek & Kurulum → Ayarlar → Bildirim URL Ayarları**:
 
 ```
-Error: ENOENT: no such file or directory, scandir
-'.../.next/server/vendor-chunks/resources'
+https://SENIN-DOMAININ.com/api/odeme/bildirim
 ```
 
-**Çözüm:** `next.config.mjs`'e `iyzipay`'i
-`experimental.serverComponentsExternalPackages` listesine eklendi —
-bu, Next.js'e bu paketi paketlemeden (native `require` ile) kullanmasını
-söylüyor, böylece paketin gerçek dosya yapısı korunuyor.
+- Adres **herkese açık** olmalı (giriş/üyelik kısıtı olmamalı).
+- Cloudflare kullanıyorsan **Bot Fight Mode / WAF kuralları** PayTR'nin POST
+  isteğini engellemesin (gerekirse bu yol için istisna ekle).
+- Bildirim URL'si tanımlı değilse müşteri ödemeyi yapar ama sipariş
+  **"Beklemede"** kalır.
 
-### Bu düzeltmeden sonra yapman gerekenler
+### Localhost'ta test
 
-```bash
-rm -rf .next
-npm run dev
-```
+- Müşterinin dış IP'si PayTR için zorunludur; yerelde `::1`/`127.0.0.1`
+  kabul edilmez. Geliştirme ortamında IP otomatik bulunur (api.ipify.org).
+  Bulunamazsa `.env.local`'e `PAYTR_USER_IP_OVERRIDE=<dış IP'n>` yaz.
+- PayTR localhost'a bildirim gönderemez. Siparişin "Ödendi"ye dönmesini yerelde
+  de görmek istersen bir tünel aç (ör. `cloudflared tunnel --url
+  http://localhost:3000` veya ngrok) ve verdiği HTTPS adresini **geçici olarak**
+  panelde Bildirim URL'si yap. Tünelsiz de ödeme formunu ve yönlendirmeleri
+  test edebilirsin; sadece sipariş durumu güncellenmez.
+- Test kartı bilgileri için PayTR geliştirici dokümantasyonuna bak
+  (dev.paytr.com → test kart bilgileri).
 
-(`.next` klasörünü silmek önemli — eski, bozuk webpack cache'i temizler.)
-Sonra `/odeme` sayfasında formu tekrar dene.
+### Notlar
 
-## Güncelleme — Ödeme Sonrası Yönlendirme Düzeltmesi & Sipariş Kaydı
-
-### 1. Kritik düzeltme: POST → Redirect 307 hatası
-
-Başarılı test ödemesinden sonra karşılaştığın hatanın nedeni büyük
-ihtimalle şuydu: iyzico, ödeme tamamlanınca tarayıcıyı `/api/odeme/sonuc`
-adresimize bir **POST** isteğiyle yönlendiriyor. Biz de oradan
-`/odeme/basarili`'ya yönlendirme yapıyorduk — ama Next.js'te (ve genel
-olarak HTTP'de) bir POST isteğine yapılan yönlendirme **varsayılan
-olarak 307** statüsüyle döner, bu da tarayıcının hedef adrese de **POST**
-atmaya çalışmasına neden olur. `/odeme/basarili` normal bir sayfa (GET
-bekler), bu yüzden hataya düşüyordu.
-
-**Düzeltme:** `/api/odeme/sonuc` artık tüm yönlendirmelerde açıkça
-**303 (See Other)** statüsü kullanıyor — bu, tarayıcıya "hedefe GET ile
-git" der. iyzico panelinde ayarlaman gereken bir şey yoktu, sorun
-tamamen bizim kod tarafımızdaydı.
-
-### 2. Sipariş Kaydı (Sanity'de "Sipariş" içerik tipi)
-
-Artık her ödeme denemesi Sanity'e bir **Sipariş** belgesi olarak
-kaydediliyor:
-
-- Ödeme başlatıldığında (`/odeme` formunu gönderdiğinde) **"Beklemede"**
-  durumunda bir kayıt oluşuyor — müşteri bilgileri, ürünler, tutarlar
-- Ödeme sonucu doğrulandığında bu kayıt **"Ödendi"** veya **"Başarısız"**
-  olarak güncelleniyor
-- Studio'daki sol menüden **"Sipariş"** listesine girip tüm siparişleri,
-  müşteri bilgilerini ve ürün detaylarını görebilirsin
-
-**Bunun çalışması için `.env.local`'e bir Sanity yazma token'ı
-eklemen gerekiyor** (daha önce bu alan boştu, opsiyoneldi):
-
-1. [sanity.io/manage](https://www.sanity.io/manage) → projen → **API** → **Tokens** → **Add API token**
-2. İsim ver (örn. "Sipariş Kayıtları"), yetki olarak **Editor** seç
-3. Oluşan token'ı `.env.local`'e ekle:
-   ```
-   SANITY_API_TOKEN=sk...
-   ```
-4. Dev server'ı yeniden başlat
-
-**Token eklemezsen ne olur?** Ödeme akışı yine sorunsuz çalışır, sadece
-sipariş Sanity'e kaydedilmez (sessizce atlanır, hata vermez).
-
-### 3. WhatsApp Numarası Artık Gerçek
-
-`/odeme/basarili` sayfasındaki "WhatsApp'tan Bize Ulaşın" butonu artık
-Sanity Site Ayarları'ndaki gerçek numarayı kullanıyor (önceden
-placeholder'dı).
-
-### 4. TC Kimlik No Artık Gerçekten Doğrulanıyor
-
-Form artık sadece "11 hane mi" diye bakmıyor, resmi T.C. Kimlik No
-kontrol basamağı algoritmasını da uyguluyor. **Sandbox'ta test ederken
-rastgele 11 haneli bir sayı artık kabul edilmeyecek** — algoritmik
-olarak geçerli bir test numarası kullanman gerekiyor, örneğin:
-
-```
-10000000146
-```
-
-(Bu gerçek bir kişiye ait değil, sadece kontrol basamağı algoritmasını
-geçen, yaygın kullanılan bir test değeri.)
-
-### Test
-
-1. `.env.local`'e `SANITY_API_TOKEN` ekle (yukarıdaki adımlar), dev
-   server'ı yeniden başlat
-2. `rm -rf .next && npm run dev`
-3. Sepete ürün ekle → Online Öde → formu doldur (TC Kimlik No için
-   `10000000146` kullan) → sandbox test kartıyla öde
-4. Bu sefer `/odeme/basarili` sayfası hatasız açılmalı, sepet boşalmalı
-5. Studio'da **Sipariş** listesine git → yeni siparişin **"Ödendi"**
-   durumunda göründüğünü, müşteri/ürün bilgilerinin doğru geldiğini
-   kontrol et
-6. Kasıtlı olarak ödemeyi iptal et / geçersiz kartla dene →
-   `/odeme/basarisiz`'a gitmeli, Studio'daki kayıt **"Başarısız"**
-   olarak güncellenmeli
+- **Taksit:** Şu an taksit seçenekleri açık (`no_installment=0`). Taksitli
+  ödemede PayTR'nin bildirdiği tutar vade farkı yüzünden sipariş tutarından
+  yüksek olabilir; Sipariş kaydında **"Tahsil Edilen Tutar"** olarak ayrıca
+  tutulur. Taksiti kapatmak için `lib/paytr/client.ts` içindeki
+  `noInstallment` değerini `"1"` yap.
+- **Eski test siparişleri:** iyzico döneminden kalan test siparişlerinde
+  Studio, artık şemada olmayan alanlar için uyarı gösterebilir; bu
+  kayıtları Studio'dan silebilirsin.
+- **Yasal metinler** (KVKK, Gizlilik Politikası, Mesafeli Satış Sözleşmesi)
+  online ödemeyi ve PayTR'yi anacak şekilde güncellendi; yine de hukuk
+  danışmanına onaylatman önerilir.
 
 ## Güncelleme — Google Search Console Hazırlığı
 

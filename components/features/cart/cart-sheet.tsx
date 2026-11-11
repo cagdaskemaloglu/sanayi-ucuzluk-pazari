@@ -291,7 +291,7 @@ export function CartSheet({ whatsappNumber }: CartSheetProps) {
               </div>
 
               {/* Online Öde — KDV DAHİL genel toplamı gösterir, /odeme
-                  sayfasına yönlendirir (iyzico Checkout Form akışı). */}
+                  sayfasına yönlendirir (PayTR iFrame akışı). */}
               <Link
                 href="/odeme"
                 onClick={() => setOpen(false)}

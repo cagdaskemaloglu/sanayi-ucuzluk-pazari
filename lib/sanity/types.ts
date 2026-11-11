@@ -81,3 +81,12 @@ export interface BlogPostDetail extends BlogPostListItem {
 // bağımlılığı gerektirir), render katmanında @portabletext/react'in kendi
 // tiplerine güvenip burada gevşek bir tip kullanıyoruz.
 export type PortableTextBlockLike = Record<string, unknown>;
+
+// Ödeme sırasında sunucunun fiyatı kendi hesaplaması için gereken minimum ürün verisi.
+export interface ProductCheckoutData {
+  _id: string;
+  name: string;
+  stockStatus: "in_stock" | "out_of_stock";
+  vatRate?: number;
+  pricingOptions: PricingOption[];
+}

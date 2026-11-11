@@ -3,6 +3,7 @@ import {
   CATEGORIES_QUERY,
   CATEGORY_BY_SLUG_QUERY,
   PRODUCTS_QUERY,
+  PRODUCTS_BY_IDS_QUERY,
   FEATURED_PRODUCTS_QUERY,
   PRODUCT_BY_SLUG_QUERY,
   SITE_SETTINGS_QUERY,
@@ -13,6 +14,7 @@ import type {
   BlogPostDetail,
   BlogPostListItem,
   Category,
+  ProductCheckoutData,
   ProductDetail,
   ProductListItem,
   SiteSettings,
@@ -70,4 +72,10 @@ export async function getBlogPostBySlug(
   slug: string
 ): Promise<BlogPostDetail | null> {
   return client.fetch(POST_BY_SLUG_QUERY, { slug }, FETCH_OPTIONS);
+}
+
+export async function getProductsByIds(
+  ids: string[]
+): Promise<ProductCheckoutData[]> {
+  return client.fetch(PRODUCTS_BY_IDS_QUERY, { ids }, FETCH_OPTIONS);
 }

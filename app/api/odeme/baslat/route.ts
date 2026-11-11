@@ -1,41 +1,107 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIyzipayClient, iyzicoRequest } from "@/lib/iyzico/client";
+import {
+  createPaytrToken,
+  generateMerchantOid,
+  getPaytrConfig,
+  type BasketLine,
+} from "@/lib/paytr/client";
+import { resolveUserIp } from "@/lib/paytr/user-ip";
+import {
+  computeCheckoutLines,
+  type CheckoutItemInput,
+} from "@/lib/checkout/compute-lines";
+import { getProductsByIds } from "@/lib/sanity/fetchers";
 import { getWriteClient } from "@/lib/sanity/write-client";
 import { SITE_CONFIG } from "@/lib/constants";
 
 // Her istek anlık işlensin, önbelleğe alınmasın.
 export const dynamic = "force-dynamic";
 
-interface CheckoutBuyer {
+interface BuyerInput {
   name: string;
   surname: string;
   email: string;
   phone: string;
-  identityNumber: string;
   city: string;
   address: string;
 }
 
-interface CheckoutItem {
-  productId: string;
-  productName: string;
-  unitLabel: string;
-  quantity: number;
-  lineTotalIncludingVat: number;
+type Parsed<T> = { ok: true; value: T } | { ok: false; error: string };
+
+function asString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
 }
 
-interface CheckoutRequestBody {
-  buyer: CheckoutBuyer;
-  items: CheckoutItem[];
-  totalExcludingVat: number;
-  totalVat: number;
-  totalPriceIncludingVat: number;
+function parseBuyer(raw: unknown): Parsed<BuyerInput> {
+  if (!raw || typeof raw !== "object") {
+    return { ok: false, error: "Lütfen tüm alanları doldurun." };
+  }
+
+  const source = raw as Record<string, unknown>;
+  const buyer: BuyerInput = {
+    name: asString(source.name),
+    surname: asString(source.surname),
+    email: asString(source.email),
+    phone: asString(source.phone).replace(/[\s()-]/g, ""),
+    city: asString(source.city),
+    address: asString(source.address),
+  };
+
+  if (Object.values(buyer).some((value) => !value)) {
+    return { ok: false, error: "Lütfen tüm alanları doldurun." };
+  }
+
+  // PayTR kuralı: e-posta en fazla 100 karakter ve Türkçe karakter içermemeli.
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyer.email);
+  const emailIsAscii = /^[\x20-\x7E]+$/.test(buyer.email);
+  if (!emailLooksValid || !emailIsAscii || buyer.email.length > 100) {
+    return {
+      ok: false,
+      error:
+        "Lütfen geçerli bir e-posta adresi girin (Türkçe karakter içermemeli).",
+    };
+  }
+
+  if (!/^\+?\d{10,15}$/.test(buyer.phone)) {
+    return { ok: false, error: "Lütfen geçerli bir telefon numarası girin." };
+  }
+
+  if (`${buyer.name} ${buyer.surname}`.length > 60) {
+    return { ok: false, error: "Ad ve soyad toplamda 60 karakteri aşamaz." };
+  }
+
+  return { ok: true, value: buyer };
+}
+
+function parseItems(raw: unknown): CheckoutItemInput[] | null {
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > 100) {
+    return null;
+  }
+
+  const items: CheckoutItemInput[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") return null;
+    const candidate = entry as Record<string, unknown>;
+    if (
+      typeof candidate.productId !== "string" ||
+      typeof candidate.unitType !== "string" ||
+      typeof candidate.quantity !== "number"
+    ) {
+      return null;
+    }
+    items.push({
+      productId: candidate.productId,
+      unitType: candidate.unitType,
+      quantity: candidate.quantity,
+    });
+  }
+  return items;
 }
 
 export async function POST(request: NextRequest) {
-  const iyzipay = getIyzipayClient();
+  const config = getPaytrConfig();
 
-  if (!iyzipay) {
+  if (!config) {
     return NextResponse.json(
       {
         error:
@@ -45,152 +111,142 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: CheckoutRequestBody;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
   }
 
-  if (!body.items?.length || !body.totalPriceIncludingVat) {
-    return NextResponse.json({ error: "Sepetiniz boş." }, { status: 400 });
-  }
+  const payload = (body && typeof body === "object" ? body : {}) as Record<
+    string,
+    unknown
+  >;
 
-  const { buyer } = body;
-  if (
-    !buyer?.name ||
-    !buyer.surname ||
-    !buyer.email ||
-    !buyer.phone ||
-    !buyer.identityNumber ||
-    !buyer.city ||
-    !buyer.address
-  ) {
+  const buyerResult = parseBuyer(payload.buyer);
+  if (!buyerResult.ok) {
+    return NextResponse.json({ error: buyerResult.error }, { status: 400 });
+  }
+  const buyer = buyerResult.value;
+
+  const items = parseItems(payload.items);
+  if (!items) {
     return NextResponse.json(
-      { error: "Lütfen tüm alanları doldurun." },
+      { error: "Sepetiniz boş veya geçersiz." },
       { status: 400 }
     );
   }
 
-  const conversationId = `sup-${Date.now()}`;
-  const priceStr = body.totalPriceIncludingVat.toFixed(2);
-
-  // Gerçek deployment'ta Vercel/Cloudflare arkasında olduğumuz için IP
-  // x-forwarded-for header'ından okunur; yoksa iyzico'nun sandbox
-  // dokümantasyonundaki örnek IP'ye düşer (sadece test/geliştirme için).
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    "85.34.78.112";
-
-  const basketItems = body.items.map((item, index) => ({
-    id: item.productId || `item-${index}`,
-    name: item.productName,
-    category1: "Sanayi Ürünleri",
-    itemType: "PHYSICAL",
-    price: item.lineTotalIncludingVat.toFixed(2),
-  }));
-
-  const addressPayload = {
-    contactName: `${buyer.name} ${buyer.surname}`.trim(),
-    city: buyer.city,
-    country: "Türkiye",
-    address: buyer.address,
-  };
-
-  const iyzicoRequestBody = {
-    locale: "tr",
-    conversationId,
-    price: priceStr,
-    paidPrice: priceStr,
-    currency: "TRY",
-    basketId: conversationId,
-    paymentGroup: "PRODUCT",
-    callbackUrl: `${SITE_CONFIG.url}/api/odeme/sonuc`,
-    buyer: {
-      id: conversationId,
-      name: buyer.name,
-      surname: buyer.surname,
-      gsmNumber: buyer.phone,
-      email: buyer.email,
-      identityNumber: buyer.identityNumber,
-      registrationAddress: buyer.address,
-      ip,
-      city: buyer.city,
-      country: "Türkiye",
-    },
-    shippingAddress: addressPayload,
-    billingAddress: addressPayload,
-    basketItems,
-  };
-
+  // Fiyatı tarayıcıdan değil, Sanity'deki güncel veriden sunucuda hesaplıyoruz.
+  let products;
   try {
-    const result = await iyzicoRequest<{
-      status: string;
-      checkoutFormContent?: string;
-      token?: string;
-      errorMessage?: string;
-    }>(
-      iyzipay.checkoutFormInitialize.create.bind(iyzipay.checkoutFormInitialize),
-      iyzicoRequestBody
+    products = await getProductsByIds(
+      Array.from(new Set(items.map((item) => item.productId)))
     );
-
-    if (result.status !== "success" || !result.checkoutFormContent) {
-      return NextResponse.json(
-        { error: result.errorMessage || "Ödeme başlatılamadı." },
-        { status: 400 }
-      );
-    }
-
-    // Sipariş kaydını "Beklemede" durumunda Sanity'e yaz. Yazma token'ı
-    // tanımlı değilse (SANITY_API_TOKEN boşsa) bu adım sessizce atlanır —
-    // ödeme akışı sipariş kaydı olmadan da çalışmaya devam eder.
-    const writeClient = getWriteClient();
-    if (writeClient) {
-      try {
-        await writeClient.create({
-          _type: "order",
-          orderNumber: conversationId,
-          status: "pending",
-          customerName: buyer.name,
-          customerSurname: buyer.surname,
-          customerEmail: buyer.email,
-          customerPhone: buyer.phone,
-          customerCity: buyer.city,
-          customerAddress: buyer.address,
-          items: body.items.map((item) => ({
-            _type: "orderItem",
-            _key: item.productId || `${item.productName}-${item.unitLabel}`,
-            productName: item.productName,
-            unitLabel: item.unitLabel,
-            quantity: item.quantity,
-            unitPrice:
-              item.quantity > 0
-                ? Number((item.lineTotalIncludingVat / item.quantity).toFixed(2))
-                : item.lineTotalIncludingVat,
-            lineTotal: item.lineTotalIncludingVat,
-          })),
-          totalExcludingVat: body.totalExcludingVat,
-          totalVat: body.totalVat,
-          totalIncludingVat: body.totalPriceIncludingVat,
-          iyzicoConversationId: conversationId,
-          iyzicoToken: result.token,
-        });
-      } catch (writeError) {
-        // Sipariş kaydı yazılamasa bile ödeme akışını durdurmuyoruz —
-        // sadece logluyoruz, kullanıcı yine de ödemeye devam edebilsin.
-        console.error("Sipariş Sanity'e yazılamadı:", writeError);
-      }
-    }
-
-    return NextResponse.json({
-      checkoutFormContent: result.checkoutFormContent,
-      token: result.token,
-    });
   } catch (error) {
-    console.error("iyzico checkout initialize hatası:", error);
+    console.error("Ürünler Sanity'den okunamadı:", error);
     return NextResponse.json(
-      { error: "Ödeme başlatılırken bir hata oluştu. Lütfen tekrar deneyin." },
+      { error: "Ürün bilgileri alınamadı. Lütfen tekrar deneyin." },
       { status: 500 }
     );
   }
+
+  const checkout = computeCheckoutLines(items, products);
+  if (!checkout.ok) {
+    return NextResponse.json({ error: checkout.error }, { status: 400 });
+  }
+  const { lines, totals } = checkout;
+
+  const userIp = await resolveUserIp(request);
+  if (!userIp) {
+    return NextResponse.json(
+      { error: "IP adresiniz belirlenemedi. Lütfen tekrar deneyin." },
+      { status: 400 }
+    );
+  }
+
+  const merchantOid = generateMerchantOid();
+
+  // Her satırı "adet 1" olarak, satır toplamıyla gönderiyoruz: böylece
+  // birim fiyat yuvarlamasından kaynaklı kuruş farkları oluşmaz.
+  const basket: BasketLine[] = lines.map((line) => [
+    `${line.productName} (${line.unitLabel} x ${line.quantity})`.slice(0, 100),
+    line.lineTotalIncludingVat.toFixed(2),
+    1,
+  ]);
+
+  let tokenResult;
+  try {
+    tokenResult = await createPaytrToken(config, {
+      userIp,
+      merchantOid,
+      email: buyer.email,
+      paymentAmountKurus: Math.round(totals.totalIncludingVat * 100),
+      basket,
+      userName: `${buyer.name} ${buyer.surname}`,
+      userAddress: `${buyer.address}, ${buyer.city}`.slice(0, 400),
+      userPhone: buyer.phone,
+      okUrl: `${SITE_CONFIG.url}/odeme/basarili`,
+      failUrl: `${SITE_CONFIG.url}/odeme/basarisiz`,
+    });
+  } catch (error) {
+    console.error("PayTR'a ulaşılamadı:", error);
+    return NextResponse.json(
+      { error: "Ödeme servisine ulaşılamadı. Lütfen tekrar deneyin." },
+      { status: 502 }
+    );
+  }
+
+  if (!tokenResult.ok) {
+    console.error("PayTR get-token başarısız:", tokenResult.reason);
+    return NextResponse.json(
+      {
+        error:
+          process.env.NODE_ENV === "production"
+            ? "Ödeme başlatılamadı. Lütfen tekrar deneyin."
+            : `Ödeme başlatılamadı (PayTR): ${tokenResult.reason}`,
+      },
+      { status: 502 }
+    );
+  }
+
+  // Sipariş kaydını "Beklemede" olarak Sanity'e yaz. SANITY_API_TOKEN hiç
+  // tanımlı değilse kayıt atlanır (geliştirme kolaylığı); tanımlı olduğu
+  // halde yazılamıyorsa ödeme BAŞLATILMAZ — kayıtsız para tahsil etmeyelim.
+  const writeClient = getWriteClient();
+  if (writeClient) {
+    try {
+      await writeClient.create({
+        _type: "order",
+        orderNumber: merchantOid,
+        status: "pending",
+        customerName: buyer.name,
+        customerSurname: buyer.surname,
+        customerEmail: buyer.email,
+        customerPhone: buyer.phone,
+        customerCity: buyer.city,
+        customerAddress: buyer.address,
+        items: lines.map((line, index) => ({
+          _type: "orderItem",
+          _key: `line-${index}`,
+          productName: line.productName,
+          unitLabel: line.unitLabel,
+          quantity: line.quantity,
+          unitPrice: line.unitPriceIncludingVat,
+          lineTotal: line.lineTotalIncludingVat,
+        })),
+        totalExcludingVat: totals.totalExcludingVat,
+        totalVat: totals.totalVat,
+        totalIncludingVat: totals.totalIncludingVat,
+      });
+    } catch (error) {
+      console.error("Sipariş Sanity'e yazılamadı:", error);
+      return NextResponse.json(
+        { error: "Siparişiniz kaydedilemedi. Lütfen tekrar deneyin." },
+        { status: 500 }
+      );
+    }
+  }
+
+  return NextResponse.json({ token: tokenResult.token });
 }

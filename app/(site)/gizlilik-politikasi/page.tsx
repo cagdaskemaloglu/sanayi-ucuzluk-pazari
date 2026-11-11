@@ -67,6 +67,11 @@ export default function GizlilikPolitikasiPage() {
           <li>
             <span className="font-medium">WhatsApp (Meta)</span> — sipariş/teklif iletişimi
           </li>
+          <li>
+            <span className="font-medium">PayTR</span> — online kart ödemesi
+            (kart bilgileri doğrudan PayTR&apos;nin güvenli sayfasına girilir,
+            bu sitenin sunucularına ulaşmaz)
+          </li>
         </ul>
       </LegalSection>
 

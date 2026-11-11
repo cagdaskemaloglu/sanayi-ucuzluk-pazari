@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { XCircle } from "lucide-react";
+import { BreakOutOfFrame } from "@/components/features/checkout/break-out-of-frame";
 
 export default function OdemeBasarisizPage() {
   return (
     <div className="mx-auto max-w-xl px-4 py-16 text-center">
+      <BreakOutOfFrame />
       <XCircle className="mx-auto h-14 w-14 text-red-500" />
       <h1 className="mt-4 text-2xl font-bold text-brand-navy">
         Ödeme Tamamlanamadı

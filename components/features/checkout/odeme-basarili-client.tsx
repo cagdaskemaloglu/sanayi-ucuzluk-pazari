@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { useCart } from "@/lib/cart/cart-context";
+import { BreakOutOfFrame } from "@/components/features/checkout/break-out-of-frame";
 import { SITE_CONFIG } from "@/lib/constants";
 
 interface OdemeBasariliClientProps {
@@ -24,6 +25,7 @@ export function OdemeBasariliClient({
 
   return (
     <div className="mx-auto max-w-xl px-4 py-16 text-center">
+      <BreakOutOfFrame />
       <CheckCircle2 className="mx-auto h-14 w-14 text-green-500" />
       <h1 className="mt-4 text-2xl font-bold text-brand-navy">
         Ödemeniz Alındı

@@ -1,46 +1,56 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart/cart-context";
-import { formatPrice, UNIT_LABELS } from "@/lib/pricing";
-import { isValidTcKimlikNo } from "@/lib/validation";
-import { IyzicoCheckoutForm } from "@/components/features/checkout/iyzico-checkout-form";
+import { formatPrice } from "@/lib/pricing";
+import { PaytrCheckoutFrame } from "@/components/features/checkout/paytr-checkout-frame";
 
 interface BuyerForm {
   name: string;
   surname: string;
   email: string;
   phone: string;
-  identityNumber: string;
   city: string;
   address: string;
 }
 
+const inputClass =
+  "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-navy focus:outline-none focus:ring-1 focus:ring-brand-navy";
+
+function Field({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  htmlFor: string;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <label htmlFor={htmlFor} className="text-sm font-medium text-gray-700">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
 export default function OdemePage() {
-  const {
-    items,
-    itemsWithVat,
-    customerAddress,
-    totalPriceExcludingVat,
-    totalVatAmount,
-    totalPriceIncludingVat,
-  } = useCart();
+  const { items, customerAddress, totalPriceIncludingVat } = useCart();
 
   const [form, setForm] = useState<BuyerForm>({
     name: "",
     surname: "",
     email: "",
     phone: "",
-    identityNumber: "",
     city: "",
     address: customerAddress || "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [checkoutFormContent, setCheckoutFormContent] = useState<
-    string | null
-  >(null);
+  const [paymentToken, setPaymentToken] = useState<string | null>(null);
 
   function updateField(field: keyof BuyerForm, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -49,32 +59,20 @@ export default function OdemePage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
-
-    if (!isValidTcKimlikNo(form.identityNumber)) {
-      setError(
-        "Girdiğiniz TC Kimlik No geçerli değil. Lütfen 11 haneli, doğru kimlik numaranızı girin."
-      );
-      return;
-    }
-
     setLoading(true);
 
     try {
+      // Fiyat göndermiyoruz: sunucu tutarı Sanity'deki güncel veriden kendisi hesaplar.
       const response = await fetch("/api/odeme/baslat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           buyer: form,
-          items: itemsWithVat.map((item) => ({
+          items: items.map((item) => ({
             productId: item.productId,
-            productName: item.productName,
-            unitLabel: UNIT_LABELS[item.unitType] ?? item.unitType,
+            unitType: item.unitType,
             quantity: item.quantity,
-            lineTotalIncludingVat: item.lineTotalIncludingVat,
           })),
-          totalExcludingVat: totalPriceExcludingVat,
-          totalVat: totalVatAmount,
-          totalPriceIncludingVat,
         }),
       });
 
@@ -82,11 +80,10 @@ export default function OdemePage() {
 
       if (!response.ok) {
         setError(data.error || "Bir hata oluştu, lütfen tekrar deneyin.");
-        setLoading(false);
         return;
       }
 
-      setCheckoutFormContent(data.checkoutFormContent);
+      setPaymentToken(data.token);
     } catch {
       setError("Bağlantı hatası. Lütfen tekrar deneyin.");
     } finally {
@@ -94,7 +91,7 @@ export default function OdemePage() {
     }
   }
 
-  if (items.length === 0 && !checkoutFormContent) {
+  if (items.length === 0 && !paymentToken) {
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
         <h1 className="text-xl font-bold text-brand-navy">Sepetiniz boş</h1>
@@ -108,11 +105,11 @@ export default function OdemePage() {
     );
   }
 
-  if (checkoutFormContent) {
+  if (paymentToken) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-12">
         <h1 className="mb-6 text-xl font-bold text-brand-navy">Ödeme</h1>
-        <IyzicoCheckoutForm checkoutFormContent={checkoutFormContent} />
+        <PaytrCheckoutFrame token={paymentToken} />
       </div>
     );
   }
@@ -129,93 +126,75 @@ export default function OdemePage() {
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium text-gray-700">Ad</label>
+          <Field label="Ad" htmlFor="buyer-name">
             <input
+              id="buyer-name"
               required
+              autoComplete="given-name"
               value={form.name}
               onChange={(event) => updateField("name", event.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-navy focus:outline-none focus:ring-1 focus:ring-brand-navy"
+              className={inputClass}
             />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Soyad</label>
+          </Field>
+          <Field label="Soyad" htmlFor="buyer-surname">
             <input
+              id="buyer-surname"
               required
+              autoComplete="family-name"
               value={form.surname}
               onChange={(event) => updateField("surname", event.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-navy focus:outline-none focus:ring-1 focus:ring-brand-navy"
+              className={inputClass}
             />
-          </div>
+          </Field>
         </div>
 
-        <div>
-          <label className="text-sm font-medium text-gray-700">E-posta</label>
+        <Field label="E-posta" htmlFor="buyer-email">
           <input
+            id="buyer-email"
             required
             type="email"
+            autoComplete="email"
             value={form.email}
             onChange={(event) => updateField("email", event.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-navy focus:outline-none focus:ring-1 focus:ring-brand-navy"
+            className={inputClass}
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className="text-sm font-medium text-gray-700">
-            Telefon
-          </label>
+        <Field label="Telefon" htmlFor="buyer-phone">
           <input
+            id="buyer-phone"
             required
+            type="tel"
+            autoComplete="tel"
             value={form.phone}
             onChange={(event) => updateField("phone", event.target.value)}
             placeholder="05XXXXXXXXX"
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-navy focus:outline-none focus:ring-1 focus:ring-brand-navy"
+            className={inputClass}
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className="text-sm font-medium text-gray-700">
-            TC Kimlik No
-          </label>
+        <Field label="Şehir" htmlFor="buyer-city">
           <input
+            id="buyer-city"
             required
-            maxLength={11}
-            inputMode="numeric"
-            value={form.identityNumber}
-            onChange={(event) =>
-              updateField(
-                "identityNumber",
-                event.target.value.replace(/\D/g, "")
-              )
-            }
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-navy focus:outline-none focus:ring-1 focus:ring-brand-navy"
-          />
-          <p className="mt-1 text-xs text-gray-400">
-            Ödeme altyapısı (iyzico) tarafından kimlik doğrulama için
-            zorunlu tutulur.
-          </p>
-        </div>
-
-        <div>
-          <label className="text-sm font-medium text-gray-700">Şehir</label>
-          <input
-            required
+            autoComplete="address-level1"
             value={form.city}
             onChange={(event) => updateField("city", event.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-navy focus:outline-none focus:ring-1 focus:ring-brand-navy"
+            className={inputClass}
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className="text-sm font-medium text-gray-700">Adres</label>
+        <Field label="Adres" htmlFor="buyer-address">
           <textarea
+            id="buyer-address"
             required
             rows={3}
+            autoComplete="street-address"
             value={form.address}
             onChange={(event) => updateField("address", event.target.value)}
-            className="mt-1 w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-navy focus:outline-none focus:ring-1 focus:ring-brand-navy"
+            className={`${inputClass} resize-none`}
           />
-        </div>
+        </Field>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
@@ -228,6 +207,11 @@ export default function OdemePage() {
             ? "Yönlendiriliyor..."
             : `Ödemeye Geç — ${formatPrice(totalPriceIncludingVat)}`}
         </button>
+
+        <p className="text-center text-xs text-gray-400">
+          Ödeme, PayTR güvenli ödeme sayfasında alınır. Kart bilgileriniz bu
+          sitede saklanmaz.
+        </p>
       </form>
     </div>
   );

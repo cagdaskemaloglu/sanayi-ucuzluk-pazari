@@ -105,14 +105,16 @@ export const orderType = defineType({
       readOnly: true,
     }),
     defineField({
-      name: "iyzicoConversationId",
-      title: "İyzico Conversation ID",
-      type: "string",
+      name: "paidTotal",
+      title: "Tahsil Edilen Tutar (₺)",
+      description:
+        "PayTR'ın bildirdiği tahsilat tutarı. Taksitli ödemelerde vade farkı nedeniyle sipariş tutarından yüksek olabilir.",
+      type: "number",
       readOnly: true,
     }),
     defineField({
-      name: "iyzicoToken",
-      title: "İyzico Token",
+      name: "paymentFailureReason",
+      title: "Başarısızlık Nedeni",
       type: "string",
       readOnly: true,
     }),

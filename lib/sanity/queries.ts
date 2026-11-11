@@ -114,3 +114,13 @@ export const POST_BY_SLUG_QUERY = groq`
     body
   }
 `;
+
+export const PRODUCTS_BY_IDS_QUERY = groq`
+  *[_type == "product" && _id in $ids] {
+    _id,
+    name,
+    stockStatus,
+    vatRate,
+    pricingOptions
+  }
+`;

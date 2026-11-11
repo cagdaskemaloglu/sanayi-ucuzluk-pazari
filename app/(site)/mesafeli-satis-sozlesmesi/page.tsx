@@ -36,13 +36,26 @@ export default function MesafeliSatisSozlesmesiPage() {
 
       <LegalSection title="3. Sipariş Süreci">
         <p>
-          Alıcı, Site üzerinden ürünleri sepete ekler ve WhatsApp&apos;a
-          Gönder butonu ile talebini Satıcı&apos;ya iletir. Bu aşamada
-          Site üzerinde bir ödeme işlemi gerçekleşmez; nihai fiyat,
-          stok durumu, ödeme yöntemi ve teslimat detayları taraflar
-          arasında WhatsApp üzerinden yapılan görüşmeyle netleştirilir ve
-          sipariş bu görüşme sonucunda kesinleşir.
+          Alıcı, Site üzerinden ürünleri sepete ekler ve siparişini iki
+          yoldan biriyle verebilir:
         </p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            <span className="font-medium">WhatsApp ile:</span> WhatsApp&apos;a
+            Gönder butonu ile talebini Satıcı&apos;ya iletir. Bu durumda Site
+            üzerinde bir ödeme işlemi gerçekleşmez; nihai fiyat, stok
+            durumu, ödeme yöntemi ve teslimat detayları taraflar arasında
+            WhatsApp üzerinden yapılan görüşmeyle netleştirilir ve sipariş bu
+            görüşme sonucunda kesinleşir.
+          </li>
+          <li>
+            <span className="font-medium">Online ödeme ile:</span> Online Öde
+            butonu ile, ödeme kuruluşu PayTR&apos;nin güvenli ödeme sayfası
+            üzerinden kredi/banka kartıyla ödeme yapar. Kart bilgileri
+            Satıcı&apos;ya iletilmez ve Site&apos;de saklanmaz. Ödemenin
+            başarıyla tamamlanmasıyla sipariş oluşur.
+          </li>
+        </ul>
       </LegalSection>
 
       <LegalSection title="4. Fiyatlandırma">
