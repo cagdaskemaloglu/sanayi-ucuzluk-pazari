@@ -6,6 +6,8 @@ import { Download } from "lucide-react";
 import { CategoryNav } from "@/components/features/catalog/category-nav";
 import { ProductGrid } from "@/components/features/catalog/product-grid";
 import { SearchBar } from "@/components/features/catalog/search-bar";
+import { JsonLd } from "@/components/seo/json-ld";
+import { buildBreadcrumbJsonLd, truncateDescription } from "@/lib/seo";
 import {
   getCategories,
   getCategoryBySlug,
@@ -27,9 +29,21 @@ export async function generateMetadata({
     return { title: "Kategori Bulunamadı" };
   }
 
+  const description = truncateDescription(
+    category.description ||
+      `${category.title} ürünleri toptan ve perakende uygun fiyatlarla. Adet, kutu ve koli seçenekleri, hızlı WhatsApp sipariş ve online ödeme.`
+  );
+
   return {
     title: category.title,
-    description: category.description,
+    description,
+    alternates: { canonical: `/kategori/${category.slug}` },
+    openGraph: {
+      title: category.title,
+      description,
+      url: `/kategori/${category.slug}`,
+      type: "website",
+    },
   };
 }
 
@@ -55,6 +69,12 @@ export default async function CategoryPage({
 
   return (
     <div>
+      <JsonLd
+        data={buildBreadcrumbJsonLd([
+          { name: "Ürünlerimiz", path: "/" },
+          { name: category.title, path: `/kategori/${category.slug}` },
+        ])}
+      />
       <CategoryNav categories={categories} activeCategory={category.slug} />
 
       <div className="mx-auto max-w-7xl px-4 py-6">

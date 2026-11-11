@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { Download } from "lucide-react";
 import { CategoryNav } from "@/components/features/catalog/category-nav";
 import { ProductGrid } from "@/components/features/catalog/product-grid";
@@ -10,6 +11,16 @@ import {
   getFeaturedProducts,
   getSiteSettings,
 } from "@/lib/sanity/fetchers";
+import { urlForImage } from "@/lib/sanity/image";
+import { JsonLd } from "@/components/seo/json-ld";
+import { SITE_CONFIG } from "@/lib/constants";
+import { absoluteUrl } from "@/lib/seo";
+
+// Arama sonuçları (?q=...) ana sayfanın kopyası sayılmasın diye canonical
+// her zaman ana sayfanın kendisi.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 interface HomePageProps {
   searchParams: {
@@ -34,8 +45,52 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   // sadece açıkça false yapılırsa buton gizlenir.
   const showCatalogDownload = siteSettings?.catalogDownloadEnabled !== false;
 
+  const siteName = siteSettings?.siteTitle || SITE_CONFIG.name;
+  const siteDescription =
+    siteSettings?.siteDescription || SITE_CONFIG.description;
+  const logoUrl = siteSettings?.siteIcon
+    ? urlForImage(siteSettings.siteIcon).width(512).height(512).url()
+    : undefined;
+
+  // Google'ın işletmeyi (logo, iletişim, sosyal medya) ve site adını
+  // tanıması için yapısal veri.
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Store",
+    name: siteName,
+    description: siteDescription,
+    url: absoluteUrl("/"),
+    logo: logoUrl,
+    image: logoUrl,
+    telephone: siteSettings?.phone || undefined,
+    email: siteSettings?.email || undefined,
+    address: siteSettings?.address
+      ? {
+          "@type": "PostalAddress",
+          streetAddress: siteSettings.address,
+          addressCountry: "TR",
+        }
+      : undefined,
+    sameAs: siteSettings?.instagramUrl ? [siteSettings.instagramUrl] : undefined,
+  };
+
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: siteName,
+    url: absoluteUrl("/"),
+    inLanguage: "tr-TR",
+  };
+
   return (
     <div>
+      <JsonLd data={organizationJsonLd} />
+      <JsonLd data={websiteJsonLd} />
+      {/* Sayfanın ana başlığı — tasarımı değiştirmemek için görsel olarak
+          gizli, ama arama motorları ve ekran okuyucular için mevcut. */}
+      <h1 className="sr-only">
+        {siteName} — {siteDescription}
+      </h1>
       {isDefaultView && <FeaturedProducts products={featuredProducts} />}
 
       {/* activeCategory verilmiyor → "Tümü" pill'i aktif görünür */}

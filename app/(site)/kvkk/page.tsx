@@ -1,26 +1,29 @@
 import type { Metadata } from "next";
 import { LegalPageLayout } from "@/components/features/legal/legal-page-layout";
 import { LegalSection } from "@/components/features/legal/legal-section";
-import { SITE_CONFIG } from "@/lib/constants";
+import { getBusinessContact } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "KVKK Aydınlatma Metni",
+  alternates: { canonical: "/kvkk" },
 };
 
-export default function KvkkPage() {
+export default async function KvkkPage() {
+  const contact = await getBusinessContact();
+
   return (
     <LegalPageLayout title="KVKK Aydınlatma Metni">
       <LegalSection title="1. Veri Sorumlusu">
         <p>
           6698 sayılı Kişisel Verilerin Korunması Kanunu (&quot;KVKK&quot;)
-          uyarınca, {SITE_CONFIG.name} (&quot;Şirket&quot;) veri sorumlusu
+          uyarınca, {contact.name} (&quot;Şirket&quot;) veri sorumlusu
           sıfatıyla, kişisel verilerinizi aşağıda açıklanan kapsamda
           işlemektedir.
         </p>
         <p>
-          Adres: {SITE_CONFIG.address}
+          Adres: {contact.address}
           <br />
-          E-posta: {SITE_CONFIG.email}
+          E-posta: {contact.email}
         </p>
       </LegalSection>
 
@@ -107,8 +110,8 @@ export default function KvkkPage() {
 
       <LegalSection title="7. Başvuru Yöntemi">
         <p>
-          Bu haklarınızı kullanmak için taleplerinizi {SITE_CONFIG.email}{" "}
-          adresine veya {SITE_CONFIG.address} adresine yazılı olarak
+          Bu haklarınızı kullanmak için taleplerinizi {contact.email}{" "}
+          adresine veya {contact.address} adresine yazılı olarak
           iletebilirsiniz.
         </p>
       </LegalSection>

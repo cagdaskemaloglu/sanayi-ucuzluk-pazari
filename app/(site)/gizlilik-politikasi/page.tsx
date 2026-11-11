@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 import { LegalPageLayout } from "@/components/features/legal/legal-page-layout";
 import { LegalSection } from "@/components/features/legal/legal-section";
-import { SITE_CONFIG } from "@/lib/constants";
+import { getBusinessContact } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "Gizlilik Politikası",
+  alternates: { canonical: "/gizlilik-politikasi" },
 };
 
-export default function GizlilikPolitikasiPage() {
+export default async function GizlilikPolitikasiPage() {
+  const contact = await getBusinessContact();
+
   return (
     <LegalPageLayout title="Gizlilik Politikası">
       <LegalSection title="1. Genel Bilgilendirme">
         <p>
-          Bu Gizlilik Politikası, {SITE_CONFIG.name} internet sitesini
+          Bu Gizlilik Politikası, {contact.name} internet sitesini
           (&quot;Site&quot;) ziyaret ettiğinizde veya sepet/sipariş
           özelliklerini kullandığınızda hangi bilgilerin nasıl
           toplandığını ve kullanıldığını açıklamak amacıyla
@@ -93,7 +96,7 @@ export default function GizlilikPolitikasiPage() {
 
       <LegalSection title="8. İletişim">
         <p>
-          Sorularınız için {SITE_CONFIG.email} adresinden bizimle iletişime
+          Sorularınız için {contact.email} adresinden bizimle iletişime
           geçebilirsiniz.
         </p>
       </LegalSection>

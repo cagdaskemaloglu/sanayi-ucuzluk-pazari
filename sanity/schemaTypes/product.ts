@@ -26,6 +26,42 @@ export const productType = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: "brand",
+      title: "Marka",
+      description:
+        "Ürünün markası (örn. Bosch, Makita). Google Alışveriş'te " +
+        "listelenmek için önerilir. Markasız ürünlerde boş bırakın.",
+      type: "string",
+    }),
+    defineField({
+      name: "sku",
+      title: "Stok Kodu (SKU)",
+      description: "İşletmenin kendi ürün/stok kodu. Opsiyonel.",
+      type: "string",
+    }),
+    defineField({
+      name: "gtin",
+      title: "Barkod (EAN / GTIN)",
+      description:
+        "Ürün ambalajındaki 8, 12, 13 veya 14 haneli barkod numarası. " +
+        "Google Alışveriş'te ürünün doğru eşleşmesi için çok önemlidir. " +
+        "Barkodu olmayan ürünlerde boş bırakın.",
+      type: "string",
+      validation: (Rule) =>
+        Rule.regex(/^(\d{8}|\d{12,14})$/, {
+          name: "barkod",
+          invert: false,
+        }).warning("Barkod 8, 12, 13 veya 14 haneli olmalı, sadece rakam."),
+    }),
+    defineField({
+      name: "mpn",
+      title: "Üretici Parça Numarası (MPN)",
+      description:
+        "Üreticinin verdiği model/parça numarası. Barkod yoksa marka ile " +
+        "birlikte girilirse Google ürünü tanımlayabilir. Opsiyonel.",
+      type: "string",
+    }),
+    defineField({
       name: "mainImage",
       title: "Ana Fotoğraf",
       description: "Ürün kartında ve galeride ilk sırada gösterilir",

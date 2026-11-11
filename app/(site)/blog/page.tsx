@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Blog",
   description:
     "Bakım ipuçları, ürün kullanım rehberleri ve sektör haberleri.",
+  alternates: { canonical: "/blog" },
 };
 
 export default async function BlogPage() {

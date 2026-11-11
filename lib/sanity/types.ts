@@ -20,6 +20,7 @@ export interface Category {
   slug: string;
   order?: number;
   description?: string;
+  _updatedAt?: string;
 }
 
 export interface ProductListItem {
@@ -31,6 +32,7 @@ export interface ProductListItem {
   pricingOptions: PricingOption[];
   featured?: boolean;
   vatRate?: number;
+  _updatedAt?: string;
   category: {
     _id: string;
     title: string;
@@ -41,6 +43,10 @@ export interface ProductListItem {
 export interface ProductDetail extends ProductListItem {
   gallery?: Image[];
   description?: string;
+  brand?: string;
+  sku?: string;
+  gtin?: string;
+  mpn?: string;
 }
 
 export interface SiteSettings {
@@ -61,6 +67,12 @@ export interface SiteSettings {
   catalogDownloadEnabled?: boolean;
   instagramUrl?: string;
   googleSiteVerification?: string;
+  shippingFee?: number;
+  freeShippingThreshold?: number;
+  deliveryMinDays?: number;
+  deliveryMaxDays?: number;
+  returnDays?: number;
+  freeReturns?: boolean;
 }
 
 export interface BlogPostListItem {

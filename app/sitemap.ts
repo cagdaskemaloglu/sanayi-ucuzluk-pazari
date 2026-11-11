@@ -51,6 +51,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.2,
     },
     {
+      url: `${SITE_CONFIG.url}/iade-ve-kargo`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
       url: `${SITE_CONFIG.url}/mesafeli-satis-sozlesmesi`,
       lastModified: new Date(),
       changeFrequency: "yearly",
@@ -61,14 +67,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Kategoriler artık kendi gerçek URL'lerine sahip (/kategori/[slug]).
   const categoryRoutes: MetadataRoute.Sitemap = categories.map((category) => ({
     url: `${SITE_CONFIG.url}/kategori/${category.slug}`,
-    lastModified: new Date(),
+    lastModified: category._updatedAt ? new Date(category._updatedAt) : new Date(),
     changeFrequency: "weekly",
     priority: 0.6,
   }));
 
   const productRoutes: MetadataRoute.Sitemap = products.map((product) => ({
     url: `${SITE_CONFIG.url}/urun/${product.slug}`,
-    lastModified: new Date(),
+    lastModified: product._updatedAt ? new Date(product._updatedAt) : new Date(),
     changeFrequency: "weekly",
     priority: 0.8,
   }));

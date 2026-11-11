@@ -148,6 +148,58 @@ export const siteSettingsType = defineType({
       type: "url",
     }),
     defineField({
+      name: "shippingFee",
+      title: "Kargo Ücreti (₺, KDV dahil)",
+      description:
+        "Standart kargo ücreti. 0 girerseniz tüm siparişlerde kargo " +
+        "ücretsiz kabul edilir. Google Alışveriş ve 'İade ve Kargo' " +
+        "sayfasında kullanılır. Boş bırakılırsa kargo ücreti sipariş " +
+        "onayında bildirilir denir (bu durumda kargo ayarını Google " +
+        "Merchant Center'dan ayrıca yapmanız gerekir).",
+      type: "number",
+      validation: (Rule) => Rule.min(0),
+    }),
+    defineField({
+      name: "freeShippingThreshold",
+      title: "Ücretsiz Kargo Alt Limiti (₺, KDV dahil)",
+      description:
+        "Bu tutar ve üzerindeki siparişlerde kargo ücretsiz. Böyle bir " +
+        "kampanya yoksa boş bırakın.",
+      type: "number",
+      validation: (Rule) => Rule.min(0),
+    }),
+    defineField({
+      name: "deliveryMinDays",
+      title: "Teslimat Süresi — En Az (iş günü)",
+      description: "Kargoya verildikten sonra en erken kaç iş gününde teslim edilir.",
+      type: "number",
+      validation: (Rule) => Rule.min(0).integer(),
+    }),
+    defineField({
+      name: "deliveryMaxDays",
+      title: "Teslimat Süresi — En Fazla (iş günü)",
+      type: "number",
+      validation: (Rule) => Rule.min(0).integer(),
+    }),
+    defineField({
+      name: "returnDays",
+      title: "İade Süresi (gün)",
+      description:
+        "Teslimattan itibaren kaç gün içinde iade kabul edilir. Yasal " +
+        "alt sınır 14 gündür; boş bırakılırsa 14 kabul edilir.",
+      type: "number",
+      initialValue: 14,
+      validation: (Rule) => Rule.min(14).integer(),
+    }),
+    defineField({
+      name: "freeReturns",
+      title: "İade Kargosu Ücretsiz mi?",
+      description:
+        "İşaretlerseniz iadelerde kargo ücretini işletme karşılar. " +
+        "İşaretlemezseniz iade kargo ücreti müşteriye aittir.",
+      type: "boolean",
+    }),
+    defineField({
       name: "googleSiteVerification",
       title: "Google Search Console Doğrulama Kodu",
       description:

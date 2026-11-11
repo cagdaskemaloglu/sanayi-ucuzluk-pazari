@@ -6,6 +6,7 @@ import { SITE_CONFIG } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "İletişim",
+  alternates: { canonical: "/iletisim" },
 };
 
 export default async function IletisimPage() {

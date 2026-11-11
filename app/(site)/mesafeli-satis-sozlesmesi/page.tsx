@@ -1,22 +1,25 @@
 import type { Metadata } from "next";
 import { LegalPageLayout } from "@/components/features/legal/legal-page-layout";
 import { LegalSection } from "@/components/features/legal/legal-section";
-import { SITE_CONFIG } from "@/lib/constants";
+import { getBusinessContact } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "Mesafeli Satış Sözleşmesi",
+  alternates: { canonical: "/mesafeli-satis-sozlesmesi" },
 };
 
-export default function MesafeliSatisSozlesmesiPage() {
+export default async function MesafeliSatisSozlesmesiPage() {
+  const contact = await getBusinessContact();
+
   return (
     <LegalPageLayout title="Mesafeli Satış Sözleşmesi">
       <LegalSection title="1. Taraflar">
         <p>
-          <span className="font-medium">Satıcı:</span> {SITE_CONFIG.name}
+          <span className="font-medium">Satıcı:</span> {contact.name}
           <br />
-          Adres: {SITE_CONFIG.address}
+          Adres: {contact.address}
           <br />
-          E-posta: {SITE_CONFIG.email}
+          E-posta: {contact.email}
         </p>
         <p>
           <span className="font-medium">Alıcı:</span> Site üzerinden ürün

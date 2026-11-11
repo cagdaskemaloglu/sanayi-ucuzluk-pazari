@@ -5,6 +5,9 @@ import { notFound } from "next/navigation";
 import { getBlogPostBySlug } from "@/lib/sanity/fetchers";
 import { urlForImage } from "@/lib/sanity/image";
 import { PortableTextRenderer } from "@/components/features/blog/portable-text-renderer";
+import { JsonLd } from "@/components/seo/json-ld";
+import { SITE_CONFIG } from "@/lib/constants";
+import { absoluteUrl } from "@/lib/seo";
 
 interface BlogPostPageProps {
   params: { slug: string };
@@ -19,9 +22,22 @@ export async function generateMetadata({
     return { title: "Yazı Bulunamadı" };
   }
 
+  const ogImageUrl = post.coverImage
+    ? urlForImage(post.coverImage).width(1200).height(630).url()
+    : undefined;
+
   return {
     title: post.title,
     description: post.excerpt,
+    alternates: { canonical: `/blog/${post.slug}` },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      url: `/blog/${post.slug}`,
+      type: "article",
+      publishedTime: post.publishedAt,
+      images: ogImageUrl ? [{ url: ogImageUrl }] : undefined,
+    },
   };
 }
 
@@ -36,8 +52,20 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     ? urlForImage(post.coverImage).width(1200).height(600).url()
     : null;
 
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.excerpt,
+    image: coverUrl ? [coverUrl] : undefined,
+    datePublished: post.publishedAt,
+    url: absoluteUrl(`/blog/${post.slug}`),
+    publisher: { "@type": "Organization", name: SITE_CONFIG.name },
+  };
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
+      <JsonLd data={articleJsonLd} />
       <nav className="mb-6 text-sm text-gray-500">
         <Link href="/blog" className="hover:text-brand-navy">
           Blog

@@ -6,7 +6,8 @@ export const CATEGORIES_QUERY = groq`
     title,
     "slug": slug.current,
     order,
-    description
+    description,
+    _updatedAt
   }
 `;
 
@@ -16,7 +17,8 @@ export const CATEGORY_BY_SLUG_QUERY = groq`
     title,
     "slug": slug.current,
     order,
-    description
+    description,
+    _updatedAt
   }
 `;
 
@@ -28,6 +30,7 @@ export const PRODUCTS_QUERY = groq`
     && (!defined($search) || name match $search + "*")
   ] | order(_createdAt desc) {
     _id,
+    _updatedAt,
     name,
     "slug": slug.current,
     mainImage,
@@ -56,11 +59,16 @@ export const FEATURED_PRODUCTS_QUERY = groq`
 export const PRODUCT_BY_SLUG_QUERY = groq`
   *[_type == "product" && slug.current == $slug][0] {
     _id,
+    _updatedAt,
     name,
     "slug": slug.current,
     mainImage,
     gallery,
     description,
+    brand,
+    sku,
+    gtin,
+    mpn,
     stockStatus,
     pricingOptions,
     featured,
@@ -87,7 +95,13 @@ export const SITE_SETTINGS_QUERY = groq`
     aboutImages,
     catalogDownloadEnabled,
     instagramUrl,
-    googleSiteVerification
+    googleSiteVerification,
+    shippingFee,
+    freeShippingThreshold,
+    deliveryMinDays,
+    deliveryMaxDays,
+    returnDays,
+    freeReturns
   }
 `;
 
@@ -122,5 +136,27 @@ export const PRODUCTS_BY_IDS_QUERY = groq`
     stockStatus,
     vatRate,
     pricingOptions
+  }
+`;
+
+// Google Merchant Center ürün feed'i için tüm ürünler, tüm alanlarıyla.
+export const PRODUCTS_FEED_QUERY = groq`
+  *[_type == "product" && defined(slug.current)] | order(_createdAt desc) {
+    _id,
+    _updatedAt,
+    name,
+    "slug": slug.current,
+    mainImage,
+    gallery,
+    description,
+    brand,
+    sku,
+    gtin,
+    mpn,
+    stockStatus,
+    pricingOptions,
+    featured,
+    vatRate,
+    "category": category->{ _id, title, "slug": slug.current }
   }
 `;

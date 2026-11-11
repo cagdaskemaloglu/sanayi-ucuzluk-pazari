@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/lib/cart/cart-context";
 import { UNIT_LABELS, formatPrice, getEffectiveUnitPrice } from "@/lib/pricing";
+import { priceIncludingVat } from "@/lib/seo";
 import type { PricingOption } from "@/lib/sanity/types";
 
 interface ProductPricingSelectorProps {
@@ -91,8 +92,15 @@ export function ProductPricingSelector({
                   </span>
                 )}
               </span>
-              <span className="font-semibold text-brand-navy">
-                {formatPrice(option.price)}
+              <span className="flex flex-col items-end">
+                <span className="font-semibold text-brand-navy">
+                  {formatPrice(option.price)}
+                </span>
+                {/* Google Alışveriş, Türkiye'de KDV dahil fiyatın sayfada
+                    görünmesini şart koşar; ana fiyat KDV hariç kalır. */}
+                <span className="text-[11px] text-gray-400">
+                  KDV dahil {formatPrice(priceIncludingVat(option.price, vatRate))}
+                </span>
               </span>
             </div>
 

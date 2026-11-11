@@ -4,6 +4,7 @@ import {
   CATEGORY_BY_SLUG_QUERY,
   PRODUCTS_QUERY,
   PRODUCTS_BY_IDS_QUERY,
+  PRODUCTS_FEED_QUERY,
   FEATURED_PRODUCTS_QUERY,
   PRODUCT_BY_SLUG_QUERY,
   SITE_SETTINGS_QUERY,
@@ -78,4 +79,8 @@ export async function getProductsByIds(
   ids: string[]
 ): Promise<ProductCheckoutData[]> {
   return client.fetch(PRODUCTS_BY_IDS_QUERY, { ids }, FETCH_OPTIONS);
+}
+
+export async function getProductsForFeed(): Promise<ProductDetail[]> {
+  return client.fetch(PRODUCTS_FEED_QUERY, {}, FETCH_OPTIONS);
 }

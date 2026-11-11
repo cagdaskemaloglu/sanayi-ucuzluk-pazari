@@ -13,6 +13,7 @@ const LEGAL_LINKS = [
   { href: "/kvkk", label: "KVKK Aydınlatma Metni" },
   { href: "/gizlilik-politikasi", label: "Gizlilik Politikası" },
   { href: "/mesafeli-satis-sozlesmesi", label: "Mesafeli Satış Sözleşmesi" },
+  { href: "/iade-ve-kargo", label: "İade ve Kargo Koşulları" },
 ];
 
 export function SiteFooter({ siteSettings }: SiteFooterProps) {

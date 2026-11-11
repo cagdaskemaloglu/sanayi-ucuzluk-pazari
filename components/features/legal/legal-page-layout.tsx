@@ -4,6 +4,9 @@ interface LegalPageLayoutProps {
   children: React.ReactNode;
 }
 
+// Not: Yasal metinler şablondur; canlıya almadan önce bir hukuk
+// danışmanına kontrol ettirilmesi önerilir. (Eskiden ziyaretçiye görünen
+// "şablon metin" uyarısı, canlı sitede güven sorunu yaratmasın diye kaldırıldı.)
 export function LegalPageLayout({
   title,
   updatedLabel,
@@ -15,12 +18,6 @@ export function LegalPageLayout({
       {updatedLabel && (
         <p className="mt-1 text-xs text-gray-400">{updatedLabel}</p>
       )}
-
-      <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        Bu sayfa bir şablon metindir; işletmenize özel yasal gereklilikleri
-        tam karşılamayabilir. Yayına almadan önce bir hukuk danışmanına
-        onaylatmanızı öneririz.
-      </div>
 
       <div className="mt-8 space-y-8 text-sm leading-relaxed text-gray-700">
         {children}
