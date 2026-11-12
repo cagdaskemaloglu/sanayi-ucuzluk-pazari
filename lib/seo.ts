@@ -131,3 +131,14 @@ export function buildBreadcrumbJsonLd(items: { name: string; path: string }[]) {
     })),
   };
 }
+
+/**
+ * Açıklaması girilmemiş ürünler için yedek metin. Google, ürün yapısal
+ * verisinde "description" alanını istiyor; boş kalırsa Search Console uyarır.
+ */
+export function productDescriptionFallback(
+  productName: string,
+  categoryTitle?: string
+): string {
+  return `${productName} — ${categoryTitle ?? "Sanayi ve hırdavat"} kategorisinde toptan ve perakende satış. Adet, kutu ve koli seçenekleriyle uygun fiyat.`;
+}

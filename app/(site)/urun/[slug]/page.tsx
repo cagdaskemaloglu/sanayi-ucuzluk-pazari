@@ -12,6 +12,7 @@ import {
   buildReturnPolicy,
   buildShippingDetails,
   getPrimaryPricingOption,
+  productDescriptionFallback,
   priceIncludingVat,
   truncateDescription,
 } from "@/lib/seo";
@@ -31,7 +32,7 @@ export async function generateMetadata({
 
   const description = truncateDescription(
     product.description ||
-      `${product.name} — ${product.category?.title ?? "Sanayi ve hırdavat"} kategorisinde toptan ve perakende satış. Adet, kutu ve koli seçenekleriyle uygun fiyat.`
+      productDescriptionFallback(product.name, product.category?.title)
   );
   const ogImageUrl = product.mainImage
     ? urlForImage(product.mainImage).width(1200).height(1200).url()
@@ -83,7 +84,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    description: product.description,
+    description:
+      product.description?.trim() ||
+      productDescriptionFallback(product.name, product.category?.title),
     image: imageUrls.length ? imageUrls : undefined,
     url: productUrl,
     category: product.category?.title,

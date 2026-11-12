@@ -4,6 +4,7 @@ import { SITE_CONFIG } from "@/lib/constants";
 import {
   absoluteUrl,
   getPrimaryPricingOption,
+  productDescriptionFallback,
   priceIncludingVat,
   unitSuffix,
 } from "@/lib/seo";
@@ -51,7 +52,7 @@ export async function GET() {
       const title = suffix ? `${product.name} - ${suffix}` : product.name;
       const description =
         product.description?.trim() ||
-        `${product.name}. ${product.category?.title ?? ""} kategorisinde toptan ve perakende satış.`;
+        productDescriptionFallback(product.name, product.category?.title);
 
       const imageLink = urlForImage(product.mainImage)
         .width(1200)

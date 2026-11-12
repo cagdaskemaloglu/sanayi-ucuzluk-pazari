@@ -14,7 +14,7 @@ import {
 import { urlForImage } from "@/lib/sanity/image";
 import { JsonLd } from "@/components/seo/json-ld";
 import { SITE_CONFIG } from "@/lib/constants";
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl, buildReturnPolicy } from "@/lib/seo";
 
 // Arama sonuçları (?q=...) ana sayfanın kopyası sayılmasın diye canonical
 // her zaman ana sayfanın kendisi.
@@ -72,6 +72,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         }
       : undefined,
     sameAs: siteSettings?.instagramUrl ? [siteSettings.instagramUrl] : undefined,
+    // İşletme düzeyinde iade politikası — Google bunu tüm ürünlere uygular.
+    hasMerchantReturnPolicy: buildReturnPolicy(siteSettings),
   };
 
   const websiteJsonLd = {
