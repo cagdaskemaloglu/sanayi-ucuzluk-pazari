@@ -10,7 +10,8 @@ import {
   computeCheckoutLines,
   type CheckoutItemInput,
 } from "@/lib/checkout/compute-lines";
-import { getProductsByIds } from "@/lib/sanity/fetchers";
+import { getProductsByIds, getSiteSettings } from "@/lib/sanity/fetchers";
+import { calculateShippingFee } from "@/lib/shipping";
 import { getWriteClient } from "@/lib/sanity/write-client";
 import { SITE_CONFIG } from "@/lib/constants";
 
@@ -139,10 +140,14 @@ export async function POST(request: NextRequest) {
 
   // Fiyatı tarayıcıdan değil, Sanity'deki güncel veriden sunucuda hesaplıyoruz.
   let products;
+  let siteSettings;
   try {
-    products = await getProductsByIds(
-      Array.from(new Set(items.map((item) => item.productId)))
-    );
+    [products, siteSettings] = await Promise.all([
+      getProductsByIds(
+        Array.from(new Set(items.map((item) => item.productId)))
+      ),
+      getSiteSettings(),
+    ]);
   } catch (error) {
     console.error("Ürünler Sanity'den okunamadı:", error);
     return NextResponse.json(
@@ -156,6 +161,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: checkout.error }, { status: 400 });
   }
   const { lines, totals } = checkout;
+
+  // Kargo ücreti de sunucuda, Site Ayarları'ndaki güncel değerle hesaplanır.
+  const shippingFee = calculateShippingFee(totals.totalIncludingVat, siteSettings);
+  const grandTotal = Math.round((totals.totalIncludingVat + shippingFee) * 100) / 100;
 
   const userIp = await resolveUserIp(request);
   if (!userIp) {
@@ -174,6 +183,9 @@ export async function POST(request: NextRequest) {
     line.lineTotalIncludingVat.toFixed(2),
     1,
   ]);
+  if (shippingFee > 0) {
+    basket.push(["Kargo", shippingFee.toFixed(2), 1]);
+  }
 
   let tokenResult;
   try {
@@ -181,7 +193,7 @@ export async function POST(request: NextRequest) {
       userIp,
       merchantOid,
       email: buyer.email,
-      paymentAmountKurus: Math.round(totals.totalIncludingVat * 100),
+      paymentAmountKurus: Math.round(grandTotal * 100),
       basket,
       userName: `${buyer.name} ${buyer.surname}`,
       userAddress: `${buyer.address}, ${buyer.city}`.slice(0, 400),
@@ -238,6 +250,8 @@ export async function POST(request: NextRequest) {
         totalExcludingVat: totals.totalExcludingVat,
         totalVat: totals.totalVat,
         totalIncludingVat: totals.totalIncludingVat,
+        shippingFee,
+        grandTotal,
       });
     } catch (error) {
       console.error("Sipariş Sanity'e yazılamadı:", error);

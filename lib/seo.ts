@@ -1,5 +1,6 @@
 import { SITE_CONFIG } from "@/lib/constants";
 import { UNIT_LABELS, getAmountIncludingVat } from "@/lib/pricing";
+import { calculateShippingFee } from "@/lib/shipping";
 import type { PricingOption, SiteSettings } from "@/lib/sanity/types";
 
 export function absoluteUrl(path = "/"): string {
@@ -61,8 +62,7 @@ export function buildShippingDetails(
   const fee = siteSettings?.shippingFee;
   if (fee === undefined || fee === null) return undefined;
 
-  const threshold = siteSettings?.freeShippingThreshold;
-  const isFree = fee === 0 || (threshold !== undefined && threshold !== null && orderPrice >= threshold);
+  const rate = calculateShippingFee(orderPrice, siteSettings);
 
   const minDays = siteSettings?.deliveryMinDays;
   const maxDays = siteSettings?.deliveryMaxDays;
@@ -71,7 +71,7 @@ export function buildShippingDetails(
     "@type": "OfferShippingDetails",
     shippingRate: {
       "@type": "MonetaryAmount",
-      value: isFree ? 0 : fee,
+      value: rate,
       currency: "TRY",
     },
     shippingDestination: {

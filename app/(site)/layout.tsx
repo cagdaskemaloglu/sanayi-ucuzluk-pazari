@@ -7,6 +7,7 @@ import { CartProvider } from "@/lib/cart/cart-context";
 import { CartSheet } from "@/components/features/cart/cart-sheet";
 import { getSiteSettings } from "@/lib/sanity/fetchers";
 import { Analytics } from "@vercel/analytics/react";
+import { pickShippingSettings } from "@/lib/shipping";
 
 // Bu layout SADECE normal site sayfalarına (/, /urun/[slug], vb.) uygulanır.
 // /studio route'u bu grubun DIŞINDA olduğu için Sanity Studio kendi tam
@@ -29,7 +30,10 @@ export default async function SiteLayout({
       <AboutSection siteSettings={siteSettings} />
       <SiteFooter siteSettings={siteSettings} />
       <WhatsappFloatingButton whatsappNumber={siteSettings?.whatsappNumber} />
-      <CartSheet whatsappNumber={siteSettings?.whatsappNumber} />
+      <CartSheet
+        whatsappNumber={siteSettings?.whatsappNumber}
+        shipping={pickShippingSettings(siteSettings)}
+      />
       <Analytics />
     </CartProvider>
   );

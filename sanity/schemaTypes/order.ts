@@ -100,7 +100,20 @@ export const orderType = defineType({
     }),
     defineField({
       name: "totalIncludingVat",
-      title: "Toplam (KDV Dahil)",
+      title: "Ürünler Toplamı (KDV Dahil)",
+      type: "number",
+      readOnly: true,
+    }),
+    defineField({
+      name: "shippingFee",
+      title: "Kargo Ücreti (₺, KDV Dahil)",
+      type: "number",
+      readOnly: true,
+    }),
+    defineField({
+      name: "grandTotal",
+      title: "Ödenecek Toplam (Kargo Dahil)",
+      description: "Müşteriden tahsil edilen tutar: ürünler + kargo.",
       type: "number",
       readOnly: true,
     }),
@@ -124,6 +137,14 @@ export const orderType = defineType({
       type: "datetime",
       readOnly: true,
     }),
+    defineField({
+      name: "notificationEmailSentAt",
+      title: "Bildirim E-postası Gönderildi",
+      description:
+        "Ödeme onayından sonra işletmeye ve müşteriye e-posta gönderildiği zaman.",
+      type: "datetime",
+      readOnly: true,
+    }),
   ],
   orderings: [
     {
@@ -136,18 +157,19 @@ export const orderType = defineType({
     select: {
       orderNumber: "orderNumber",
       status: "status",
-      total: "totalIncludingVat",
+      total: "grandTotal",
+      productsTotal: "totalIncludingVat",
       name: "customerName",
       surname: "customerSurname",
     },
-    prepare({ orderNumber, status, total, name, surname }) {
+    prepare({ orderNumber, status, total, productsTotal, name, surname }) {
       const statusLabel =
         { pending: "Beklemede", paid: "Ödendi", failed: "Başarısız" }[
           status as string
         ] ?? status;
       return {
         title: `${orderNumber ?? "?"} — ${name ?? ""} ${surname ?? ""}`.trim(),
-        subtitle: `${statusLabel} — ${total ?? 0} ₺`,
+        subtitle: `${statusLabel} — ${total ?? productsTotal ?? 0} ₺`,
       };
     },
   },

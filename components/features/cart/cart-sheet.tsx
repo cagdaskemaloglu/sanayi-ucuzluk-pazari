@@ -15,16 +15,18 @@ import { useCart } from "@/lib/cart/cart-context";
 import { UNIT_LABELS, formatPrice } from "@/lib/pricing";
 import { buildWhatsappMessage, buildWhatsappUrl } from "@/lib/whatsapp";
 import { SITE_CONFIG } from "@/lib/constants";
+import { calculateShippingFee, type ShippingSettings } from "@/lib/shipping";
 
 interface CartSheetProps {
   whatsappNumber?: string;
+  shipping?: ShippingSettings;
 }
 
 // NEXT_PUBLIC_TURNSTILE_SITE_KEY tanımlıysa Turnstile zorunlu olur;
 // tanımlı değilse (henüz kurulmadıysa) doğrulama otomatik geçilmiş sayılır.
 const turnstileRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
-export function CartSheet({ whatsappNumber }: CartSheetProps) {
+export function CartSheet({ whatsappNumber, shipping }: CartSheetProps) {
   const {
     items,
     itemsWithVat,
@@ -48,6 +50,11 @@ export function CartSheet({ whatsappNumber }: CartSheetProps) {
   const [isVerified, setIsVerified] = useState(!turnstileRequired);
 
   const number = whatsappNumber || SITE_CONFIG.whatsappNumber;
+  // Online ödemede eklenecek kargo (WhatsApp siparişlerinde kargo ayrıca
+  // konuşulduğu için WhatsApp tutarına eklenmez).
+  const shippingFee = calculateShippingFee(totalPriceIncludingVat, shipping);
+  const onlineTotal =
+    Math.round((totalPriceIncludingVat + shippingFee) * 100) / 100;
   const canSend = items.length > 0 && isVerified;
 
   function handleSendToWhatsapp() {
@@ -288,6 +295,12 @@ export function CartSheet({ whatsappNumber }: CartSheetProps) {
                     {formatPrice(totalVatAmount)}
                   </span>
                 </div>
+                <div className="mt-1 flex items-center justify-between text-xs text-gray-500">
+                  <span>Kargo (online ödemede)</span>
+                  <span className="font-medium text-gray-700">
+                    {shippingFee > 0 ? formatPrice(shippingFee) : "Ücretsiz"}
+                  </span>
+                </div>
               </div>
 
               {/* Online Öde — KDV DAHİL genel toplamı gösterir, /odeme
@@ -298,8 +311,10 @@ export function CartSheet({ whatsappNumber }: CartSheetProps) {
                 className="flex w-full items-center justify-center gap-2 rounded-md bg-brand-navy px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-navy-dark"
               >
                 <CreditCard className="h-4 w-4" />
-                Online Öde — {formatPrice(totalPriceIncludingVat)}{" "}
-                <span className="font-normal">(KDV dahil)</span>
+                Online Öde — {formatPrice(onlineTotal)}{" "}
+                <span className="font-normal">
+                  ({shippingFee > 0 ? "KDV ve kargo dahil" : "KDV dahil"})
+                </span>
               </Link>
             </div>
           </>

@@ -151,11 +151,12 @@ export const siteSettingsType = defineType({
       name: "shippingFee",
       title: "Kargo Ücreti (₺, KDV dahil)",
       description:
-        "Standart kargo ücreti. 0 girerseniz tüm siparişlerde kargo " +
-        "ücretsiz kabul edilir. Google Alışveriş ve 'İade ve Kargo' " +
-        "sayfasında kullanılır. Boş bırakılırsa kargo ücreti sipariş " +
-        "onayında bildirilir denir (bu durumda kargo ayarını Google " +
-        "Merchant Center'dan ayrıca yapmanız gerekir).",
+        "Online ödemede siparişe eklenen standart kargo ücreti. 0 " +
+        "girerseniz kargo her zaman ücretsiz olur. Sepet, ödeme sayfası, " +
+        "Google Alışveriş ve 'İade ve Kargo' sayfası bu değeri kullanır. " +
+        "Boş bırakılırsa online ödemede kargo ücreti alınmaz ve Google'a " +
+        "kargo bilgisi gönderilmez (bu durumda Merchant Center'dan ayrıca " +
+        "tanımlamanız gerekir).",
       type: "number",
       validation: (Rule) => Rule.min(0),
     }),

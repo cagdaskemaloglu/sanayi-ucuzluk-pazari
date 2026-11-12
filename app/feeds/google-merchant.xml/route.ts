@@ -1,6 +1,7 @@
 import { getProductsForFeed, getSiteSettings } from "@/lib/sanity/fetchers";
 import { urlForImage } from "@/lib/sanity/image";
 import { SITE_CONFIG } from "@/lib/constants";
+import { calculateShippingFee } from "@/lib/shipping";
 import {
   absoluteUrl,
   getPrimaryPricingOption,
@@ -40,7 +41,6 @@ export async function GET() {
 
   const siteName = siteSettings?.siteTitle || SITE_CONFIG.name;
   const shippingFee = siteSettings?.shippingFee;
-  const freeThreshold = siteSettings?.freeShippingThreshold;
 
   const items = products
     .map((product) => {
@@ -69,15 +69,10 @@ export async function GET() {
 
       let shipping = "";
       if (shippingFee !== undefined && shippingFee !== null) {
-        const isFree =
-          shippingFee === 0 ||
-          (freeThreshold !== undefined &&
-            freeThreshold !== null &&
-            price >= freeThreshold);
         shipping =
           "      <g:shipping>\n" +
           "        <g:country>TR</g:country>\n" +
-          `        <g:price>${(isFree ? 0 : shippingFee).toFixed(2)} TRY</g:price>\n` +
+          `        <g:price>${calculateShippingFee(price, siteSettings).toFixed(2)} TRY</g:price>\n` +
           "      </g:shipping>\n";
       }
 
