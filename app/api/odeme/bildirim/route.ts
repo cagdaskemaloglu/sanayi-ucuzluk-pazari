@@ -200,9 +200,20 @@ export async function POST(request: NextRequest) {
     try {
       const sent = await sendPaidOrderEmails(paidOrder);
       if (sent) {
+        const now = new Date().toISOString();
         await writeClient
           .patch(paidOrderId)
-          .set({ notificationEmailSentAt: new Date().toISOString() })
+          .set({ notificationEmailSentAt: now })
+          .setIfMissing({ statusEmails: [] })
+          .append("statusEmails", [
+            {
+              _key: `paid${Date.now().toString(36)}`,
+              _type: "statusEmail",
+              status: "paid",
+              result: "sent",
+              at: now,
+            },
+          ])
           .commit();
       }
     } catch (error) {

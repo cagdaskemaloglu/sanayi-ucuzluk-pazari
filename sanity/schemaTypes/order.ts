@@ -1,12 +1,24 @@
 import { defineField, defineType } from "sanity";
+import {
+  CARRIERS,
+  ORDER_STATUSES,
+  orderStatusTitle,
+} from "../../lib/orders/status";
 
 export const orderType = defineType({
   name: "order",
   title: "Sipariş",
   type: "document",
+  groups: [
+    { name: "durum", title: "Durum ve Kargo", default: true },
+    { name: "musteri", title: "Müşteri" },
+    { name: "urunler", title: "Ürünler ve Tutar" },
+    { name: "odeme", title: "Ödeme Kaydı" },
+  ],
   fields: [
     defineField({
       name: "orderNumber",
+      group: "durum",
       title: "Sipariş No",
       type: "string",
       readOnly: true,
@@ -14,48 +26,153 @@ export const orderType = defineType({
     defineField({
       name: "status",
       title: "Durum",
+      description:
+        "Durumu değiştirip PUBLISH'e bastığınızda müşteriye otomatik e-posta " +
+        "gider (Hazırlanıyor, Kargolandı, Teslim Edildi, İptal / İade). " +
+        "'Ödeme Bekleniyor', 'Yeni Sipariş' ve 'Ödeme Başarısız' durumlarını " +
+        "ödeme sistemi kendisi yazar.",
       type: "string",
+      group: "durum",
       options: {
-        list: [
-          { title: "Beklemede", value: "pending" },
-          { title: "Ödendi", value: "paid" },
-          { title: "Başarısız / İptal", value: "failed" },
-        ],
+        list: ORDER_STATUSES.map(({ value, title }) => ({ value, title })),
+        layout: "radio",
       },
       initialValue: "pending",
     }),
     defineField({
+      name: "carrier",
+      title: "Kargo Firması",
+      type: "string",
+      group: "durum",
+      options: { list: CARRIERS.map((name) => ({ title: name, value: name })) },
+      hidden: ({ document }) =>
+        !["shipped", "delivered"].includes(document?.status as string),
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          const status = (context.document as { status?: string } | undefined)?.status;
+          if (status === "shipped" && !value) {
+            return "Kargolandı durumunda kargo firması seçilmeli (müşteriye e-postada gider).";
+          }
+          return true;
+        }),
+    }),
+    defineField({
+      name: "trackingNumber",
+      title: "Kargo Takip Numarası",
+      type: "string",
+      group: "durum",
+      hidden: ({ document }) =>
+        !["shipped", "delivered"].includes(document?.status as string),
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          const doc = context.document as { status?: string; carrier?: string } | undefined;
+          if (doc?.status === "shipped" && !value && doc?.carrier !== "Ambar / Nakliye") {
+            return "Kargolandı durumunda takip numarası girilmeli (müşteriye e-postada gider).";
+          }
+          return true;
+        }),
+    }),
+    defineField({
+      name: "trackingUrl",
+      title: "Kargo Takip Linki (opsiyonel)",
+      description:
+        "Kargo firmasının sitesindeki takip sayfasının linki. Girilirse " +
+        "e-postada 'Kargomu Takip Et' butonu olarak gösterilir.",
+      type: "url",
+      group: "durum",
+      hidden: ({ document }) =>
+        !["shipped", "delivered"].includes(document?.status as string),
+    }),
+    defineField({
+      name: "statusNote",
+      title: "Müşteriye Not (opsiyonel)",
+      description:
+        "Bir sonraki durum e-postasına eklenir. Örn. 'Ürününüz yarın öğlene " +
+        "kadar kargoya verilecek.' veya iptal nedeni.",
+      type: "text",
+      rows: 2,
+      group: "durum",
+    }),
+    defineField({
+      name: "statusEmails",
+      title: "Gönderilen Durum E-postaları",
+      description: "Sistem tarafından tutulur; her durum için e-posta bir kez gider.",
+      type: "array",
+      group: "durum",
+      readOnly: true,
+      of: [
+        {
+          type: "object",
+          name: "statusEmail",
+          fields: [
+            defineField({ name: "status", title: "Durum", type: "string" }),
+            defineField({ name: "result", title: "Sonuç", type: "string" }),
+            defineField({ name: "at", title: "Zaman", type: "datetime" }),
+            defineField({ name: "error", title: "Hata", type: "string" }),
+            defineField({ name: "note", title: "Gönderilen Not", type: "text" }),
+          ],
+          preview: {
+            select: { status: "status", result: "result", at: "at", error: "error" },
+            prepare({ status, result, at, error }) {
+              const resultLabel =
+                {
+                  sent: "gönderildi",
+                  sending: "gönderiliyor…",
+                  failed: "GÖNDERİLEMEDİ",
+                  skipped: "atlandı (e-posta ayarı yok)",
+                }[result as string] ?? result;
+              return {
+                title: `${orderStatusTitle(status)} — ${resultLabel}`,
+                subtitle: [
+                  at ? new Date(at).toLocaleString("tr-TR") : "",
+                  error ?? "",
+                ]
+                  .filter(Boolean)
+                  .join(" · "),
+              };
+            },
+          },
+        },
+      ],
+    }),
+    defineField({
       name: "customerName",
+      group: "musteri",
       title: "Ad",
       type: "string",
       readOnly: true,
     }),
     defineField({
       name: "customerSurname",
+      group: "musteri",
       title: "Soyad",
       type: "string",
       readOnly: true,
     }),
     defineField({
       name: "customerEmail",
+      group: "musteri",
       title: "E-posta",
       type: "string",
       readOnly: true,
     }),
     defineField({
       name: "customerPhone",
+      group: "musteri",
       title: "Telefon",
       type: "string",
       readOnly: true,
     }),
     defineField({
       name: "customerCity",
+      group: "musteri",
       title: "Şehir",
       type: "string",
       readOnly: true,
     }),
     defineField({
       name: "customerAddress",
+      group: "musteri",
       title: "Adres",
       type: "text",
       rows: 2,
@@ -63,6 +180,7 @@ export const orderType = defineType({
     }),
     defineField({
       name: "items",
+      group: "urunler",
       title: "Ürünler",
       type: "array",
       readOnly: true,
@@ -88,30 +206,35 @@ export const orderType = defineType({
     }),
     defineField({
       name: "totalExcludingVat",
+      group: "urunler",
       title: "Toplam (KDV Hariç)",
       type: "number",
       readOnly: true,
     }),
     defineField({
       name: "totalVat",
+      group: "urunler",
       title: "Toplam KDV",
       type: "number",
       readOnly: true,
     }),
     defineField({
       name: "totalIncludingVat",
+      group: "urunler",
       title: "Ürünler Toplamı (KDV Dahil)",
       type: "number",
       readOnly: true,
     }),
     defineField({
       name: "shippingFee",
+      group: "urunler",
       title: "Kargo Ücreti (₺, KDV Dahil)",
       type: "number",
       readOnly: true,
     }),
     defineField({
       name: "grandTotal",
+      group: "urunler",
       title: "Ödenecek Toplam (Kargo Dahil)",
       description: "Müşteriden tahsil edilen tutar: ürünler + kargo.",
       type: "number",
@@ -119,6 +242,7 @@ export const orderType = defineType({
     }),
     defineField({
       name: "paidTotal",
+      group: "odeme",
       title: "Tahsil Edilen Tutar (₺)",
       description:
         "PayTR'ın bildirdiği tahsilat tutarı. Taksitli ödemelerde vade farkı nedeniyle sipariş tutarından yüksek olabilir.",
@@ -127,19 +251,22 @@ export const orderType = defineType({
     }),
     defineField({
       name: "paymentFailureReason",
+      group: "odeme",
       title: "Başarısızlık Nedeni",
       type: "string",
       readOnly: true,
     }),
     defineField({
       name: "paidAt",
+      group: "odeme",
       title: "Ödeme Tarihi",
       type: "datetime",
       readOnly: true,
     }),
     defineField({
       name: "notificationEmailSentAt",
-      title: "Bildirim E-postası Gönderildi",
+      group: "odeme",
+      title: "Sipariş Onay E-postaları Gönderildi",
       description:
         "Ödeme onayından sonra işletmeye ve müşteriye e-posta gönderildiği zaman.",
       type: "datetime",
@@ -163,13 +290,9 @@ export const orderType = defineType({
       surname: "customerSurname",
     },
     prepare({ orderNumber, status, total, productsTotal, name, surname }) {
-      const statusLabel =
-        { pending: "Beklemede", paid: "Ödendi", failed: "Başarısız" }[
-          status as string
-        ] ?? status;
       return {
-        title: `${orderNumber ?? "?"} — ${name ?? ""} ${surname ?? ""}`.trim(),
-        subtitle: `${statusLabel} — ${total ?? productsTotal ?? 0} ₺`,
+        title: `${name ?? ""} ${surname ?? ""} — ${total ?? productsTotal ?? 0} ₺`.trim(),
+        subtitle: `${orderStatusTitle(status)} · ${orderNumber ?? "?"}`,
       };
     },
   },

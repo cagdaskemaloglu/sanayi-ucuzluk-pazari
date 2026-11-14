@@ -214,3 +214,134 @@ export async function sendCustomerOrderConfirmation(
     replyTo: shop.email,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Durum e-postaları — mağaza sahibi Studio'da siparişin durumunu
+// değiştirdiğinde (Sanity webhook → /api/siparis/durum) müşteriye gider.
+// ---------------------------------------------------------------------------
+
+export interface OrderForStatusEmail extends Omit<PaidOrderForEmail, "paidTotal"> {
+  paidTotal?: number;
+  carrier?: string;
+  trackingNumber?: string;
+  trackingUrl?: string;
+  statusNote?: string;
+}
+
+const STATUS_EMAIL_CONTENT: Record<
+  "preparing" | "shipped" | "delivered" | "cancelled",
+  { subject: string; title: string; intro: string }
+> = {
+  preparing: {
+    subject: "Siparişiniz hazırlanıyor",
+    title: "Siparişiniz hazırlanıyor",
+    intro:
+      "Siparişiniz hazırlanmaya başlandı. Kargoya verildiğinde takip bilgileriyle birlikte size tekrar haber vereceğiz.",
+  },
+  shipped: {
+    subject: "Siparişiniz kargoya verildi",
+    title: "Siparişiniz kargoya verildi",
+    intro: "Siparişiniz kargoya verildi. Kargo bilgileriniz aşağıdadır.",
+  },
+  delivered: {
+    subject: "Siparişiniz teslim edildi",
+    title: "Siparişiniz teslim edildi",
+    intro:
+      "Siparişiniz teslim edildi olarak işaretlendi. Bizi tercih ettiğiniz için teşekkür ederiz. Bir sorun varsa lütfen bize ulaşın.",
+  },
+  cancelled: {
+    subject: "Siparişiniz iptal edildi",
+    title: "Siparişiniz iptal edildi",
+    intro:
+      "Siparişiniz iptal edildi. Online ödeme yaptıysanız ücret iadeniz, ödemeyi yaptığınız karta bankanıza bağlı olarak birkaç iş günü içinde yansır.",
+  },
+};
+
+export function isCustomerStatusEmail(
+  status: string
+): status is keyof typeof STATUS_EMAIL_CONTENT {
+  return status in STATUS_EMAIL_CONTENT;
+}
+
+function safeHttpUrl(value?: string): string | undefined {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function sendCustomerStatusEmail(
+  order: OrderForStatusEmail,
+  status: keyof typeof STATUS_EMAIL_CONTENT,
+  shop: ShopInfo
+): Promise<SendEmailResult> {
+  const content = STATUS_EMAIL_CONTENT[status];
+  const trackingUrl = safeHttpUrl(order.trackingUrl);
+  const showShipping = status === "shipped";
+
+  const contactLines = [
+    shop.phone ? `Telefon: ${shop.phone}` : "",
+    shop.whatsappNumber ? `WhatsApp: https://wa.me/${shop.whatsappNumber}` : "",
+    shop.email ? `E-posta: ${shop.email}` : "",
+  ].filter(Boolean);
+
+  const shippingHtml = showShipping
+    ? `
+    <div style="margin:16px 0;padding:12px 16px;background:#f5f7fa;border-radius:6px;line-height:1.7">
+      ${order.carrier ? `<strong>Kargo firması:</strong> ${escapeHtml(order.carrier)}<br>` : ""}
+      ${order.trackingNumber ? `<strong>Takip numarası:</strong> ${escapeHtml(order.trackingNumber)}` : ""}
+      ${trackingUrl ? `<div style="margin-top:12px"><a href="${escapeHtml(trackingUrl)}" style="display:inline-block;background:#1e3a5f;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:6px;font-weight:bold">Kargomu Takip Et</a></div>` : ""}
+    </div>`
+    : "";
+
+  const noteHtml = order.statusNote?.trim()
+    ? `<p style="margin:16px 0;padding:12px 16px;border-left:3px solid #e8a33d;background:#fffaf0;white-space:pre-line">${escapeHtml(order.statusNote.trim())}</p>`
+    : "";
+
+  const html = wrap(
+    content.title,
+    `
+    <p style="margin:0 0 12px">Merhaba ${escapeHtml(order.customerName)},</p>
+    <p style="margin:0 0 16px">${escapeHtml(content.intro)}</p>
+    <p style="margin:0 0 16px"><strong>Sipariş No:</strong> ${escapeHtml(order.orderNumber)}</p>
+    ${shippingHtml}
+    ${noteHtml}
+    ${itemsTableHtml(order as PaidOrderForEmail)}
+    <p style="margin:20px 0 0;font-size:13px;color:#6b7280;line-height:1.6">
+      Sorularınız için bize ulaşabilirsiniz:<br>
+      ${contactLines.map((line) => escapeHtml(line)).join("<br>")}
+    </p>
+    `
+  );
+
+  const text = [
+    `Merhaba ${order.customerName},`,
+    "",
+    content.intro,
+    "",
+    `Sipariş No: ${order.orderNumber}`,
+    ...(showShipping
+      ? [
+          order.carrier ? `Kargo firması: ${order.carrier}` : "",
+          order.trackingNumber ? `Takip numarası: ${order.trackingNumber}` : "",
+          trackingUrl ? `Takip linki: ${trackingUrl}` : "",
+        ].filter(Boolean)
+      : []),
+    ...(order.statusNote?.trim() ? ["", order.statusNote.trim()] : []),
+    "",
+    itemsText(order as PaidOrderForEmail),
+    "",
+    ...contactLines,
+  ].join("\n");
+
+  return sendEmail({
+    to: [order.customerEmail],
+    subject: `${shop.name} — ${content.subject} (${order.orderNumber})`,
+    html,
+    text,
+    replyTo: shop.email,
+  });
+}
