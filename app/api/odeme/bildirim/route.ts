@@ -66,7 +66,16 @@ async function sendPaidOrderEmails(
     ["işletme", shopResult],
     ["müşteri", customerResult],
   ] as const) {
-    if (!result.ok && !result.skipped) {
+    if (result.ok) {
+      console.log(`Sipariş e-postası (${label}) gönderildi:`, order.orderNumber);
+    } else if (result.skipped) {
+      console.warn(
+        `Sipariş e-postası (${label}) ATLANDI: RESEND_API_KEY / ORDER_EMAIL_FROM tanımlı değil` +
+          (label === "işletme" ? " veya alıcı adresi (ORDER_NOTIFICATION_EMAIL / Site Ayarları e-posta) boş" : "") +
+          ".",
+        order.orderNumber
+      );
+    } else {
       console.error(`Sipariş e-postası (${label}) gönderilemedi:`, order.orderNumber, result.error);
     }
   }
@@ -103,12 +112,19 @@ export async function POST(request: NextRequest) {
     return plain("missing fields", 400);
   }
 
+  console.log("PayTR bildirimi alındı:", merchantOid, status, totalAmount);
+
   if (!verifyPaytrNotification(config, { merchantOid, status, totalAmount, hash })) {
+    console.error(
+      "PayTR bildirimi hash doğrulaması başarısız (PAYTR_MERCHANT_KEY/SALT doğru mu?):",
+      merchantOid
+    );
     return plain("PAYTR notification failed: bad hash", 400);
   }
 
   const writeClient = getWriteClient();
   if (!writeClient) {
+    console.warn("SANITY_API_TOKEN tanımlı değil; sipariş güncellenmedi:", merchantOid);
     // Sipariş kaydı tutulmuyor (SANITY_API_TOKEN yok) — güncellenecek bir şey yok.
     return plain("OK");
   }
@@ -128,6 +144,7 @@ export async function POST(request: NextRequest) {
 
     // Yalnızca ilk bildirim işlenir (sipariş zaten kesinleştiyse dokunma).
     if (order.status !== "pending") {
+      console.log("Sipariş zaten işlenmiş, bildirim yok sayıldı:", merchantOid, order.status);
       return plain("OK");
     }
 
