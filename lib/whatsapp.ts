@@ -5,6 +5,7 @@ interface BuildMessageParams {
   items: CartItem[];
   customerName?: string;
   customerAddress?: string;
+  customerPhone?: string;
   customerNote?: string;
   siteUrl: string;
 }
@@ -16,6 +17,7 @@ export function buildWhatsappMessage({
   items,
   customerName,
   customerAddress,
+  customerPhone,
   customerNote,
   siteUrl,
 }: BuildMessageParams): string {
@@ -55,6 +57,10 @@ export function buildWhatsappMessage({
   if (customerName?.trim()) {
     lines.push("");
     lines.push(`Ad Soyad: ${customerName.trim()}`);
+  }
+
+  if (customerPhone?.trim()) {
+    lines.push(`Telefon: ${customerPhone.trim()}`);
   }
 
   if (customerAddress?.trim()) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart/cart-context";
 import { formatPrice } from "@/lib/pricing";
@@ -14,6 +14,33 @@ interface BuyerForm {
   phone: string;
   city: string;
   address: string;
+}
+
+const EMPTY_FORM: BuyerForm = {
+  name: "",
+  surname: "",
+  email: "",
+  phone: "",
+  city: "",
+  address: "",
+};
+
+// Sepetteki "Ad Soyad" tek alan; ödeme formunda ad ve soyad ayrı. Son
+// kelime soyad, öncekiler ad kabul edilir ("Ahmet Can Yılmaz" → "Ahmet
+// Can" + "Yılmaz"). Telefondaki boşluk/parantez/tireler temizlenir.
+function buyerFromCart(
+  fullName: string,
+  address: string,
+  phone: string
+): Partial<BuyerForm> {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  const surname = parts.length > 1 ? parts.pop() ?? "" : "";
+  return {
+    name: parts.join(" "),
+    surname,
+    address: address.trim(),
+    phone: phone.replace(/[\s()-]/g, ""),
+  };
 }
 
 const inputClass =
@@ -43,7 +70,14 @@ interface OdemeClientProps {
 }
 
 export function OdemeClient({ shipping }: OdemeClientProps) {
-  const { items, customerAddress, totalPriceIncludingVat } = useCart();
+  const {
+    items,
+    customerName,
+    customerAddress,
+    customerPhone,
+    hydrated,
+    totalPriceIncludingVat,
+  } = useCart();
   // Gösterim içindir; tahsil edilen tutar sunucuda aynı fonksiyonla
   // Sanity'deki güncel fiyatlarla yeniden hesaplanır.
   const shippingFee = calculateShippingFee(totalPriceIncludingVat, shipping);
@@ -52,14 +86,27 @@ export function OdemeClient({ shipping }: OdemeClientProps) {
   const remainingForFreeShipping =
     shippingFee > 0 && threshold ? threshold - totalPriceIncludingVat : 0;
 
-  const [form, setForm] = useState<BuyerForm>({
-    name: "",
-    surname: "",
-    email: "",
-    phone: "",
-    city: "",
-    address: customerAddress || "",
-  });
+  const [form, setForm] = useState<BuyerForm>(() => ({
+    ...EMPTY_FORM,
+    ...buyerFromCart(customerName, customerAddress, customerPhone),
+  }));
+
+  // Sayfa doğrudan açıldıysa (veya yenilendiyse) sepet localStorage'dan
+  // biraz sonra yüklenir; o an hâlâ boş olan alanları sepetteki bilgilerle
+  // bir kez doldur — kullanıcının yazdıklarının üzerine yazma.
+  const prefilledFromCart = useRef(false);
+  useEffect(() => {
+    if (!hydrated || prefilledFromCart.current) return;
+    prefilledFromCart.current = true;
+    const fromCart = buyerFromCart(customerName, customerAddress, customerPhone);
+    setForm((prev) => {
+      const next = { ...prev };
+      for (const key of Object.keys(fromCart) as (keyof BuyerForm)[]) {
+        if (!next[key].trim() && fromCart[key]) next[key] = fromCart[key] ?? "";
+      }
+      return next;
+    });
+  }, [hydrated, customerName, customerAddress, customerPhone]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentToken, setPaymentToken] = useState<string | null>(null);

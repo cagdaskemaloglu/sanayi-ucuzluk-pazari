@@ -33,6 +33,7 @@ export function CartSheet({ whatsappNumber, shipping }: CartSheetProps) {
     itemsWithVat,
     customerName,
     customerAddress,
+    customerPhone,
     customerNote,
     isOpen,
     setOpen,
@@ -40,6 +41,7 @@ export function CartSheet({ whatsappNumber, shipping }: CartSheetProps) {
     updateQuantity,
     setCustomerName,
     setCustomerAddress,
+    setCustomerPhone,
     setCustomerNote,
     clearCart,
     totalItems,
@@ -65,6 +67,7 @@ export function CartSheet({ whatsappNumber, shipping }: CartSheetProps) {
       items,
       customerName: customerName.trim() || undefined,
       customerAddress: customerAddress.trim() || undefined,
+      customerPhone: customerPhone.trim() || undefined,
       customerNote,
       siteUrl: window.location.origin,
     });
@@ -187,9 +190,31 @@ export function CartSheet({ whatsappNumber, shipping }: CartSheetProps) {
                 <input
                   id="customer-name"
                   type="text"
+                  autoComplete="name"
                   value={customerName}
                   onChange={(event) => setCustomerName(event.target.value)}
                   placeholder="Adınız Soyadınız"
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-navy focus:outline-none focus:ring-1 focus:ring-brand-navy"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="customer-phone"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Telefon{" "}
+                  <span className="font-normal text-gray-400">
+                    (opsiyonel)
+                  </span>
+                </label>
+                <input
+                  id="customer-phone"
+                  type="tel"
+                  autoComplete="tel"
+                  value={customerPhone}
+                  onChange={(event) => setCustomerPhone(event.target.value)}
+                  placeholder="05XX XXX XX XX"
                   className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-navy focus:outline-none focus:ring-1 focus:ring-brand-navy"
                 />
               </div>

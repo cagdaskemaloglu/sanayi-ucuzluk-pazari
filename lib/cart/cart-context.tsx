@@ -16,6 +16,7 @@ interface CartState {
   items: CartItem[];
   customerName: string;
   customerAddress: string;
+  customerPhone: string;
   customerNote: string;
   isOpen: boolean;
 }
@@ -28,6 +29,7 @@ type CartAction =
   | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
   | { type: "SET_CUSTOMER_NAME"; payload: string }
   | { type: "SET_CUSTOMER_ADDRESS"; payload: string }
+  | { type: "SET_CUSTOMER_PHONE"; payload: string }
   | { type: "SET_CUSTOMER_NOTE"; payload: string }
   | { type: "CLEAR_CART" }
   | { type: "SET_OPEN"; payload: boolean }
@@ -37,6 +39,7 @@ type CartAction =
         items: CartItem[];
         customerName: string;
         customerAddress: string;
+        customerPhone: string;
         customerNote: string;
       };
     };
@@ -45,6 +48,7 @@ const initialState: CartState = {
   items: [],
   customerName: "",
   customerAddress: "",
+  customerPhone: "",
   customerNote: "",
   isOpen: false,
 };
@@ -57,6 +61,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         items: action.payload.items,
         customerName: action.payload.customerName,
         customerAddress: action.payload.customerAddress,
+        customerPhone: action.payload.customerPhone,
         customerNote: action.payload.customerNote,
       };
 
@@ -116,6 +121,9 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     case "SET_CUSTOMER_ADDRESS":
       return { ...state, customerAddress: action.payload };
 
+    case "SET_CUSTOMER_PHONE":
+      return { ...state, customerPhone: action.payload };
+
     case "SET_CUSTOMER_NOTE":
       return { ...state, customerNote: action.payload };
 
@@ -141,13 +149,17 @@ interface CartContextValue {
   items: CartItem[];
   customerName: string;
   customerAddress: string;
+  customerPhone: string;
   customerNote: string;
   isOpen: boolean;
+  /** localStorage'dan sepet geri yüklendi mi (ilk render'da false). */
+  hydrated: boolean;
   addItem: (item: AddItemPayload) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   setCustomerName: (name: string) => void;
   setCustomerAddress: (address: string) => void;
+  setCustomerPhone: (phone: string) => void;
   setCustomerNote: (note: string) => void;
   clearCart: () => void;
   setOpen: (open: boolean) => void;
@@ -180,6 +192,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             items: parsed.items ?? [],
             customerName: parsed.customerName ?? "",
             customerAddress: parsed.customerAddress ?? "",
+            customerPhone: parsed.customerPhone ?? "",
             customerNote: parsed.customerNote ?? "",
           },
         });
@@ -202,6 +215,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           items: state.items,
           customerName: state.customerName,
           customerAddress: state.customerAddress,
+          customerPhone: state.customerPhone,
           customerNote: state.customerNote,
         })
       );
@@ -212,6 +226,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     state.items,
     state.customerName,
     state.customerAddress,
+    state.customerPhone,
     state.customerNote,
     hydrated,
   ]);
@@ -258,8 +273,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     items: state.items,
     customerName: state.customerName,
     customerAddress: state.customerAddress,
+    customerPhone: state.customerPhone,
     customerNote: state.customerNote,
     isOpen: state.isOpen,
+    hydrated,
     addItem: (item) => dispatch({ type: "ADD_ITEM", payload: item }),
     removeItem: (id) => dispatch({ type: "REMOVE_ITEM", payload: { id } }),
     updateQuantity: (id, quantity) =>
@@ -268,6 +285,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: "SET_CUSTOMER_NAME", payload: name }),
     setCustomerAddress: (address) =>
       dispatch({ type: "SET_CUSTOMER_ADDRESS", payload: address }),
+    setCustomerPhone: (phone) =>
+      dispatch({ type: "SET_CUSTOMER_PHONE", payload: phone }),
     setCustomerNote: (note) =>
       dispatch({ type: "SET_CUSTOMER_NOTE", payload: note }),
     clearCart: () => dispatch({ type: "CLEAR_CART" }),
