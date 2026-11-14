@@ -117,11 +117,12 @@ export const productType = defineType({
     }),
     defineField({
       name: "pricingOptions",
-      title: "Satış Birimleri ve Fiyatları (KDV Hariç)",
+      title: "Satış Birimleri ve Fiyatları (KDV Hariç, Adet Başı)",
       description:
-        "Bu ürün hangi birimlerle satılıyorsa ekleyin, fiyatları KDV " +
-        "HARİÇ girin. Adet dışındaki birimlerde (kutu/koli/palet) kaç " +
-        "adet içerdiğini girin.",
+        "Bu ürün hangi birimlerle satılıyorsa ekleyin. Fiyatları KDV " +
+        "HARİÇ ve her zaman ADET BAŞI girin. Örn. kolide 24 adet var ve " +
+        "koli alana adet başı 41 ₺ ise: Birim = Koli, Adet Sayısı = 24, " +
+        "Fiyat = 41 → sitede koli fiyatı otomatik 984 ₺ olur.",
       type: "array",
       validation: (Rule) => Rule.required().min(1),
       of: [
@@ -155,7 +156,10 @@ export const productType = defineType({
             }),
             defineField({
               name: "price",
-              title: "Fiyat (₺)",
+              title: "Adet Başı Fiyat (₺, KDV hariç)",
+              description:
+                "Kutu/koli/palet seçiliyse bile TEK ADEDİN fiyatını girin; " +
+                "birim fiyatı, adet sayısıyla çarpılarak hesaplanır.",
               type: "number",
               validation: (Rule) => Rule.required().min(0),
             }),
@@ -176,13 +180,15 @@ export const productType = defineType({
                     defineField({
                       name: "minQuantity",
                       title: "Minimum Miktar",
-                      description: "Bu miktar ve üzerinde geçerli olur.",
+                      description:
+                        "Bu birimden (adet/kutu/koli/palet) bu miktar ve " +
+                        "üzerinde alınırsa geçerli olur.",
                       type: "number",
                       validation: (Rule) => Rule.required().min(2),
                     }),
                     defineField({
                       name: "price",
-                      title: "Bu Kademedeki Birim Fiyat (₺)",
+                      title: "Bu Kademedeki Adet Başı Fiyat (₺)",
                       type: "number",
                       validation: (Rule) => Rule.required().min(0),
                     }),
@@ -191,7 +197,7 @@ export const productType = defineType({
                     select: { minQuantity: "minQuantity", price: "price" },
                     prepare({ minQuantity, price }) {
                       return {
-                        title: `${minQuantity}+ adet: ${price} ₺/birim`,
+                        title: `${minQuantity}+ birim: adet başı ${price} ₺`,
                       };
                     },
                   },
@@ -210,9 +216,15 @@ export const productType = defineType({
                 { adet: "Adet", kutu: "Kutu", koli: "Koli", palet: "Palet" }[
                   unitType as string
                 ] ?? unitType;
-              const pieces = piecesPerUnit ? ` (${piecesPerUnit} adet)` : "";
+              const pieceCount =
+                unitType !== "adet" && piecesPerUnit ? piecesPerUnit : 1;
+              const pieces = pieceCount > 1 ? ` (${pieceCount} adet)` : "";
+              const unitTotal =
+                pieceCount > 1 && typeof price === "number"
+                  ? ` → ${unitLabel.toLocaleLowerCase("tr-TR")} ${Math.round(price * pieceCount * 100) / 100} ₺`
+                  : "";
               return {
-                title: `${unitLabel}${pieces} — ${price ?? "?"} ₺`,
+                title: `${unitLabel}${pieces} — adet başı ${price ?? "?"} ₺${unitTotal}`,
               };
             },
           },

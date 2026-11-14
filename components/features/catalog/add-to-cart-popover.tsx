@@ -1,7 +1,8 @@
 "use client";
 
+import { QuantityInput } from "@/components/ui/quantity-input";
 import { useState } from "react";
-import { Minus, Plus, ShoppingCart } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -10,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/lib/cart/cart-context";
-import { UNIT_LABELS, formatPrice, getEffectiveUnitPrice } from "@/lib/pricing";
+import { UNIT_LABELS, formatPrice, getEffectiveUnitPrice, piecesInUnit } from "@/lib/pricing";
 import type { PricingOption } from "@/lib/sanity/types";
 
 interface AddToCartPopoverProps {
@@ -124,8 +125,15 @@ export function AddToCartPopover({
                   </span>
                 )}
               </span>
-              <span className="font-semibold text-brand-navy">
-                {formatPrice(option.price)}
+              <span className="flex flex-col items-end leading-tight">
+                <span className="font-semibold text-brand-navy">
+                  {formatPrice(option.price)}
+                </span>
+                {piecesInUnit(option) > 1 && option.piecePrice !== undefined && (
+                  <span className="text-[10px] text-gray-500">
+                    adet başı {formatPrice(option.piecePrice)}
+                  </span>
+                )}
               </span>
             </label>
           ))}
@@ -147,25 +155,14 @@ export function AddToCartPopover({
         )}
 
         <div className="mt-3 flex items-center gap-2">
-          <div className="flex items-center rounded-md border border-gray-300">
-            <button
-              type="button"
-              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              className="flex h-8 w-8 items-center justify-center text-gray-600 hover:bg-gray-50"
-              aria-label="Azalt"
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </button>
-            <span className="w-7 text-center text-sm">{quantity}</span>
-            <button
-              type="button"
-              onClick={() => setQuantity((q) => q + 1)}
-              className="flex h-8 w-8 items-center justify-center text-gray-600 hover:bg-gray-50"
-              aria-label="Artır"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-          </div>
+          <QuantityInput
+            value={quantity}
+            onChange={setQuantity}
+            className="rounded-md border border-gray-300"
+            buttonClassName="flex h-8 w-8 items-center justify-center text-gray-600 hover:bg-gray-50"
+            inputClassName="h-8 w-12"
+            iconClassName="h-3.5 w-3.5"
+          />
 
           <Button
             variant="accent"

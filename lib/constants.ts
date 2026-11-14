@@ -10,4 +10,6 @@ export const SITE_CONFIG = {
   address: "İstanbul, Türkiye",
 } as const;
 
-export const CART_STORAGE_KEY = "sup-cart";
+// v2: kutu/koli fiyatları adet başı girilmeye başlandı; eski sepetlerdeki
+// fiyatlar geçersiz olduğu için anahtar değişti (eski sepetler sıfırlanır).
+export const CART_STORAGE_KEY = "sup-cart-v2";

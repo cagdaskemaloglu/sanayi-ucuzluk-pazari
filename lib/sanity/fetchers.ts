@@ -21,6 +21,8 @@ import type {
   SiteSettings,
 } from "./types";
 
+import { normalizePricingOptions } from "@/lib/pricing";
+
 // cache: "no-store" → Next.js bu istekleri asla önbelleğe almaz, Studio'da
 // yapılan her değişiklik (Publish edildiği anda) sitede hemen görünür.
 // Trafik arttıkça performans için ileride ISR/on-demand revalidation'a
@@ -41,7 +43,7 @@ export async function getProducts(params?: {
   categorySlug?: string;
   search?: string;
 }): Promise<ProductListItem[]> {
-  return client.fetch(
+  const products: ProductListItem[] = await client.fetch(
     PRODUCTS_QUERY,
     {
       categorySlug: params?.categorySlug ?? null,
@@ -49,16 +51,27 @@ export async function getProducts(params?: {
     },
     FETCH_OPTIONS
   );
+  return products.map(normalizePricingOptions);
 }
 
 export async function getFeaturedProducts(): Promise<ProductListItem[]> {
-  return client.fetch(FEATURED_PRODUCTS_QUERY, {}, FETCH_OPTIONS);
+  const products: ProductListItem[] = await client.fetch(
+    FEATURED_PRODUCTS_QUERY,
+    {},
+    FETCH_OPTIONS
+  );
+  return products.map(normalizePricingOptions);
 }
 
 export async function getProductBySlug(
   slug: string
 ): Promise<ProductDetail | null> {
-  return client.fetch(PRODUCT_BY_SLUG_QUERY, { slug }, FETCH_OPTIONS);
+  const product: ProductDetail | null = await client.fetch(
+    PRODUCT_BY_SLUG_QUERY,
+    { slug },
+    FETCH_OPTIONS
+  );
+  return product ? normalizePricingOptions(product) : null;
 }
 
 export async function getSiteSettings(): Promise<SiteSettings | null> {
@@ -78,9 +91,19 @@ export async function getBlogPostBySlug(
 export async function getProductsByIds(
   ids: string[]
 ): Promise<ProductCheckoutData[]> {
-  return client.fetch(PRODUCTS_BY_IDS_QUERY, { ids }, FETCH_OPTIONS);
+  const products: ProductCheckoutData[] = await client.fetch(
+    PRODUCTS_BY_IDS_QUERY,
+    { ids },
+    FETCH_OPTIONS
+  );
+  return products.map(normalizePricingOptions);
 }
 
 export async function getProductsForFeed(): Promise<ProductDetail[]> {
-  return client.fetch(PRODUCTS_FEED_QUERY, {}, FETCH_OPTIONS);
+  const products: ProductDetail[] = await client.fetch(
+    PRODUCTS_FEED_QUERY,
+    {},
+    FETCH_OPTIONS
+  );
+  return products.map(normalizePricingOptions);
 }

@@ -25,9 +25,10 @@ export async function GET() {
         Kategori: product.category?.title ?? "",
         Birim: UNIT_LABELS[option.unitType] ?? option.unitType,
         "Birimdeki Adet": option.piecesPerUnit ?? "",
-        "Fiyat (KDV Hariç, ₺)": option.price,
+        "Adet Başı Fiyat (KDV Hariç, ₺)": option.piecePrice ?? option.price,
+        "Birim Fiyatı (KDV Hariç, ₺)": option.price,
         "KDV Oranı (%)": product.vatRate ?? 20,
-        "Fiyat (KDV Dahil, ₺)": Number(
+        "Birim Fiyatı (KDV Dahil, ₺)": Number(
           getAmountIncludingVat(option.price, product.vatRate).toFixed(2)
         ),
         "Toplu Alım Kademeleri": bulkTiersText,
@@ -45,7 +46,8 @@ export async function GET() {
     { wch: 20 }, // Kategori
     { wch: 10 }, // Birim
     { wch: 14 }, // Birimdeki Adet
-    { wch: 18 }, // Fiyat (KDV Hariç)
+    { wch: 20 }, // Adet Başı Fiyat
+    { wch: 18 }, // Birim Fiyatı (KDV Hariç)
     { wch: 12 }, // KDV Oranı
     { wch: 18 }, // Fiyat (KDV Dahil)
     { wch: 30 }, // Toplu Alım Kademeleri

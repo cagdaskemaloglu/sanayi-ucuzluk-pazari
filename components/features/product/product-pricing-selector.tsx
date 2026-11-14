@@ -1,11 +1,12 @@
 "use client";
 
+import { QuantityInput } from "@/components/ui/quantity-input";
 import { useState } from "react";
-import { Minus, Plus, ShoppingCart } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/lib/cart/cart-context";
-import { UNIT_LABELS, formatPrice, getEffectiveUnitPrice } from "@/lib/pricing";
+import { UNIT_LABELS, formatPrice, getEffectiveUnitPrice, piecesInUnit } from "@/lib/pricing";
 import { priceIncludingVat } from "@/lib/seo";
 import type { PricingOption } from "@/lib/sanity/types";
 
@@ -98,6 +99,11 @@ export function ProductPricingSelector({
                 </span>
                 {/* Google Alışveriş, Türkiye'de KDV dahil fiyatın sayfada
                     görünmesini şart koşar; ana fiyat KDV hariç kalır. */}
+                {piecesInUnit(option) > 1 && option.piecePrice !== undefined && (
+                  <span className="text-xs text-gray-500">
+                    adet başı {formatPrice(option.piecePrice)}
+                  </span>
+                )}
                 <span className="text-[11px] text-gray-400">
                   KDV dahil {formatPrice(priceIncludingVat(option.price, vatRate))}
                 </span>
@@ -113,7 +119,9 @@ export function ProductPricingSelector({
                   .map((tier, i) => (
                     <span key={i}>
                       {i > 0 && " · "}
-                      {tier.minQuantity}+ adet: {formatPrice(tier.price)}
+                      {tier.minQuantity}+{" "}
+                      {(UNIT_LABELS[option.unitType] ?? option.unitType).toLocaleLowerCase("tr-TR")}
+                      : {formatPrice(tier.price)}
                     </span>
                   ))}
               </p>
@@ -123,25 +131,13 @@ export function ProductPricingSelector({
       </div>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex items-center self-start rounded-md border border-gray-300 sm:self-auto">
-          <button
-            type="button"
-            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-            className="flex h-11 w-10 items-center justify-center text-gray-600 hover:bg-gray-50"
-            aria-label="Azalt"
-          >
-            <Minus className="h-4 w-4" />
-          </button>
-          <span className="w-8 text-center text-sm">{quantity}</span>
-          <button
-            type="button"
-            onClick={() => setQuantity((q) => q + 1)}
-            className="flex h-11 w-10 items-center justify-center text-gray-600 hover:bg-gray-50"
-            aria-label="Artır"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        </div>
+        <QuantityInput
+          value={quantity}
+          onChange={setQuantity}
+          className="self-start rounded-md border border-gray-300 sm:self-auto"
+          buttonClassName="flex h-11 w-10 items-center justify-center text-gray-600 hover:bg-gray-50"
+          inputClassName="h-11 w-14"
+        />
 
         <Button
           variant="accent"

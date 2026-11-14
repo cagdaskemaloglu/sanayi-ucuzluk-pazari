@@ -1,9 +1,10 @@
 "use client";
 
+import { QuantityInput } from "@/components/ui/quantity-input";
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { CreditCard, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { CreditCard, ShoppingCart, Trash2 } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -140,31 +141,17 @@ export function CartSheet({ whatsappNumber, shipping }: CartSheetProps) {
                       </p>
 
                       <div className="mt-2 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity - 1)
-                            }
-                            className="flex h-7 w-7 items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-50 active:bg-gray-100"
-                            aria-label="Azalt"
-                          >
-                            <Minus className="h-3 w-3" />
-                          </button>
-                          <span className="w-6 text-center text-sm">
-                            {item.quantity}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity + 1)
-                            }
-                            className="flex h-7 w-7 items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-50 active:bg-gray-100"
-                            aria-label="Artır"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </button>
-                        </div>
+                        <QuantityInput
+                          value={item.quantity}
+                          onChange={(quantity) =>
+                            updateQuantity(item.id, quantity)
+                          }
+                          allowRemove
+                          className="gap-1.5"
+                          buttonClassName="flex h-7 w-7 items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-50 active:bg-gray-100"
+                          inputClassName="h-7 w-12 rounded border border-gray-200"
+                          iconClassName="h-3 w-3"
+                        />
 
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-brand-navy">

@@ -10,7 +10,14 @@ export interface BulkTier {
 export interface PricingOption {
   unitType: PricingUnitType;
   piecesPerUnit?: number;
+  /**
+   * Bu birimin (1 adet / 1 kutu / 1 koli / 1 palet) KDV hariç fiyatı.
+   * Sanity'de kutu/koli/palet için ADET BAŞI fiyat girilir; fetchers
+   * (normalizePricingOptions) bunu adet sayısıyla çarparak buraya yazar.
+   */
   price: number;
+  /** Sanity'ye girilen adet başı KDV hariç fiyat (gösterim için). */
+  piecePrice?: number;
   bulkTiers?: BulkTier[];
 }
 
