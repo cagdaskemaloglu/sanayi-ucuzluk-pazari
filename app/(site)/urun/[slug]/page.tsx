@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ProductGallery } from "@/components/features/product/product-gallery";
 import { ProductPricingSelector } from "@/components/features/product/product-pricing-selector";
 import { JsonLd } from "@/components/seo/json-ld";
+import { ShippingDayBadge } from "@/components/features/product/shipping-day-badge";
 import { getProductBySlug, getSiteSettings } from "@/lib/sanity/fetchers";
 import { urlForImage } from "@/lib/sanity/image";
 import {
@@ -119,6 +120,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: "Ürünlerimiz", path: "/" },
+    ...(product.category?.parent
+      ? [
+          {
+            name: product.category.parent.title,
+            path: `/kategori/${product.category.parent.slug}`,
+          },
+        ]
+      : []),
     ...(product.category
       ? [
           {
@@ -140,6 +149,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
           Ürünlerimiz
         </Link>
         <span>/</span>
+        {product.category.parent && (
+          <>
+            <Link
+              href={`/kategori/${product.category.parent.slug}`}
+              className="hover:text-brand-navy"
+            >
+              {product.category.parent.title}
+            </Link>
+            <span>/</span>
+          </>
+        )}
         <Link
           href={`/kategori/${product.category.slug}`}
           className="hover:text-brand-navy"
@@ -164,11 +184,20 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {product.name}
           </h1>
 
-          {isOutOfStock && (
-            <span className="mt-2 inline-block rounded-md bg-gray-900 px-2.5 py-1 text-xs font-medium text-white">
-              Stokta Yok
-            </span>
-          )}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {isOutOfStock ? (
+              <span className="inline-block rounded-md bg-gray-900 px-2.5 py-1 text-xs font-medium text-white">
+                Stokta Yok
+              </span>
+            ) : (
+              <ShippingDayBadge size="md" />
+            )}
+            {product.appliedDiscount && !isOutOfStock && (
+              <span className="inline-block rounded-md bg-red-600 px-2.5 py-1 text-xs font-semibold text-white">
+                {product.appliedDiscount.label}
+              </span>
+            )}
+          </div>
 
           {product.description && (
             <p className="mt-4 whitespace-pre-line text-gray-600">

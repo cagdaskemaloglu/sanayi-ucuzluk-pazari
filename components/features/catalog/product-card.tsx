@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { urlForImage } from "@/lib/sanity/image";
-import { UNIT_LABELS } from "@/lib/pricing";
-import { AddToCartPopover } from "@/components/features/catalog/add-to-cart-popover";
+import { CardPurchasePanel } from "@/components/features/catalog/card-purchase-panel";
+import { ShippingDayBadge } from "@/components/features/product/shipping-day-badge";
 import type { ProductListItem } from "@/lib/sanity/types";
 
 export function ProductCard({ product }: { product: ProductListItem }) {
@@ -30,6 +30,11 @@ export function ProductCard({ product }: { product: ProductListItem }) {
             Görsel yok
           </div>
         )}
+        {product.appliedDiscount && !isOutOfStock && (
+          <span className="absolute right-2 top-2 rounded-md bg-red-600 px-2 py-1 text-xs font-semibold text-white">
+            {product.appliedDiscount.label}
+          </span>
+        )}
         {isOutOfStock && (
           <span className="absolute left-2 top-2 rounded-md bg-gray-900/80 px-2 py-1 text-xs font-medium text-white">
             Stokta Yok
@@ -45,21 +50,9 @@ export function ProductCard({ product }: { product: ProductListItem }) {
           {product.name}
         </Link>
 
-        {product.pricingOptions?.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {product.pricingOptions.map((option, index) => (
-              <span
-                key={index}
-                className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600"
-              >
-                {UNIT_LABELS[option.unitType] ?? option.unitType}
-                {option.piecesPerUnit ? ` (${option.piecesPerUnit})` : ""}
-              </span>
-            ))}
-          </div>
-        )}
+        {!isOutOfStock && <ShippingDayBadge />}
 
-        <AddToCartPopover
+        <CardPurchasePanel
           productId={product._id}
           productSlug={product.slug}
           productName={product.name}

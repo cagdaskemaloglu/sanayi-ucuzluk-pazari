@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useCart } from "@/lib/cart/cart-context";
 import { UNIT_LABELS, formatPrice, getEffectiveUnitPrice, piecesInUnit } from "@/lib/pricing";
 import { priceIncludingVat } from "@/lib/seo";
+import { PriceTag } from "@/components/features/product/price-tag";
 import type { PricingOption } from "@/lib/sanity/types";
 
 interface ProductPricingSelectorProps {
@@ -94,9 +95,7 @@ export function ProductPricingSelector({
                 )}
               </span>
               <span className="flex flex-col items-end">
-                <span className="font-semibold text-brand-navy">
-                  {formatPrice(option.price)}
-                </span>
+                <PriceTag price={option.price} originalPrice={option.originalPrice} />
                 {/* Google Alışveriş, Türkiye'de KDV dahil fiyatın sayfada
                     görünmesini şart koşar; ana fiyat KDV hariç kalır. */}
                 {piecesInUnit(option) > 1 && option.piecePrice !== undefined && (

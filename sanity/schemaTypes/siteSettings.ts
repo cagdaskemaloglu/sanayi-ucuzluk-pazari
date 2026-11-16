@@ -183,6 +183,26 @@ export const siteSettingsType = defineType({
       validation: (Rule) => Rule.min(0).integer(),
     }),
     defineField({
+      name: "shippingCutoffHour",
+      title: "Aynı Gün Kargo Kesim Saati (Türkiye saati)",
+      description:
+        "Bu saatten ÖNCE verilen siparişler için ürünlerde 'Bugün kargoda', " +
+        "sonrası için 'Yarın kargoda' yazar. Varsayılan 15 (00.00–15.00 " +
+        "arası bugün kargoda).",
+      type: "number",
+      initialValue: 15,
+      validation: (Rule) => Rule.min(0).max(24).integer(),
+    }),
+    defineField({
+      name: "sundayShipping",
+      title: "Pazar Günü Kargo Çıkışı Var mı?",
+      description:
+        "İşaretli değilse (varsayılan) Cumartesi kesim saatinden sonra ve " +
+        "Pazar günü verilen siparişlerde 'Pazartesi kargoda' yazar.",
+      type: "boolean",
+      initialValue: false,
+    }),
+    defineField({
       name: "returnDays",
       title: "İade Süresi (gün)",
       description:

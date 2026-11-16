@@ -168,7 +168,7 @@ interface CartContextValue {
   totalPriceExcludingVat: number;
   /** Sadece KDV tutarı */
   totalVatAmount: number;
-  /** KDV DAHİL genel toplam (Online Öde butonunda kullanılır) */
+  /** KDV DAHİL genel toplam (Kartla Öde butonunda kullanılır) */
   totalPriceIncludingVat: number;
   /** Her ürün için hesaplanmış KDV detayları (sepet listesinde gösterim için) */
   itemsWithVat: CartItemWithVat[];

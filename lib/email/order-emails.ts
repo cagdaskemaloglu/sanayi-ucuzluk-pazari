@@ -17,6 +17,8 @@ export interface PaidOrderForEmail {
   customerEmail: string;
   customerPhone: string;
   customerCity: string;
+  customerDistrict?: string;
+  customerTaxNumber?: string;
   customerAddress: string;
   items: {
     productName: string;
@@ -35,6 +37,12 @@ export interface ShopInfo {
   email?: string;
   phone?: string;
   whatsappNumber?: string;
+}
+
+function cityLine(order: { customerCity: string; customerDistrict?: string }): string {
+  return order.customerDistrict
+    ? `${order.customerDistrict} / ${order.customerCity}`
+    : order.customerCity;
 }
 
 function escapeHtml(value: string | number | undefined | null): string {
@@ -133,9 +141,10 @@ export async function sendShopOrderNotification(
       ${escapeHtml(fullName)}<br>
       Telefon: <a href="tel:${escapeHtml(order.customerPhone)}">${escapeHtml(order.customerPhone)}</a><br>
       E-posta: <a href="mailto:${escapeHtml(order.customerEmail)}">${escapeHtml(order.customerEmail)}</a>
+      ${order.customerTaxNumber ? `<br>VKN/TCKN (fatura): <strong>${escapeHtml(order.customerTaxNumber)}</strong>` : ""}
     </p>
     <h2 style="font-size:15px;margin:16px 0 8px">Teslimat Adresi</h2>
-    <p style="margin:0;line-height:1.6;white-space:pre-line">${escapeHtml(order.customerAddress)}<br>${escapeHtml(order.customerCity)}</p>
+    <p style="margin:0;line-height:1.6;white-space:pre-line">${escapeHtml(order.customerAddress)}<br>${escapeHtml(cityLine(order))}</p>
     <h2 style="font-size:15px;margin:16px 0 8px">Ürünler</h2>
     ${itemsTableHtml(order)}
     <p style="margin:20px 0 0;font-size:13px;color:#6b7280">Siparişin detayları Sanity Studio → Sipariş bölümünde: <a href="${escapeHtml(studioUrl)}">${escapeHtml(studioUrl)}</a></p>
@@ -149,7 +158,8 @@ export async function sendShopOrderNotification(
     `Müşteri: ${fullName}`,
     `Telefon: ${order.customerPhone}`,
     `E-posta: ${order.customerEmail}`,
-    `Adres: ${order.customerAddress}, ${order.customerCity}`,
+    ...(order.customerTaxNumber ? [`VKN/TCKN (fatura): ${order.customerTaxNumber}`] : []),
+    `Adres: ${order.customerAddress}, ${cityLine(order)}`,
     "",
     itemsText(order),
     "",
@@ -183,7 +193,7 @@ export async function sendCustomerOrderConfirmation(
     <p style="margin:0 0 16px"><strong>Sipariş No:</strong> ${escapeHtml(order.orderNumber)}</p>
     ${itemsTableHtml(order)}
     <h2 style="font-size:15px;margin:20px 0 8px">Teslimat Adresi</h2>
-    <p style="margin:0;line-height:1.6;white-space:pre-line">${escapeHtml(order.customerAddress)}<br>${escapeHtml(order.customerCity)}</p>
+    <p style="margin:0;line-height:1.6;white-space:pre-line">${escapeHtml(order.customerAddress)}<br>${escapeHtml(cityLine(order))}</p>
     <p style="margin:20px 0 0;font-size:13px;color:#6b7280;line-height:1.6">
       Sorularınız için bize ulaşabilirsiniz:<br>
       ${contactLines.map((line) => escapeHtml(line)).join("<br>")}<br>
@@ -200,7 +210,7 @@ export async function sendCustomerOrderConfirmation(
     `Sipariş No: ${order.orderNumber}`,
     itemsText(order),
     "",
-    `Teslimat adresi: ${order.customerAddress}, ${order.customerCity}`,
+    `Teslimat adresi: ${order.customerAddress}, ${cityLine(order)}`,
     "",
     ...contactLines,
     `İade ve kargo koşulları: ${SITE_CONFIG.url}/iade-ve-kargo`,

@@ -12,6 +12,7 @@ import {
 } from "@/lib/checkout/compute-lines";
 import { getProductsByIds, getSiteSettings } from "@/lib/sanity/fetchers";
 import { calculateShippingFee } from "@/lib/shipping";
+import { isValidProvinceDistrict } from "@/lib/data/tr-locations";
 import { getWriteClient } from "@/lib/sanity/write-client";
 import { SITE_CONFIG } from "@/lib/constants";
 
@@ -24,7 +25,10 @@ interface BuyerInput {
   email: string;
   phone: string;
   city: string;
+  district: string;
   address: string;
+  /** Opsiyonel: 10 haneli VKN veya 11 haneli TCKN. */
+  taxNumber: string;
 }
 
 type Parsed<T> = { ok: true; value: T } | { ok: false; error: string };
@@ -45,11 +49,25 @@ function parseBuyer(raw: unknown): Parsed<BuyerInput> {
     email: asString(source.email),
     phone: asString(source.phone).replace(/[\s()-]/g, ""),
     city: asString(source.city),
+    district: asString(source.district),
     address: asString(source.address),
+    taxNumber: asString(source.taxNumber).replace(/\D/g, ""),
   };
 
-  if (Object.values(buyer).some((value) => !value)) {
+  const { taxNumber, ...required } = buyer;
+  if (Object.values(required).some((value) => !value)) {
     return { ok: false, error: "Lütfen tüm alanları doldurun." };
+  }
+
+  if (!isValidProvinceDistrict(buyer.city, buyer.district)) {
+    return { ok: false, error: "Lütfen listeden geçerli bir il ve ilçe seçin." };
+  }
+
+  if (taxNumber && taxNumber.length !== 10 && taxNumber.length !== 11) {
+    return {
+      ok: false,
+      error: "Vergi kimlik numarası 10, TC kimlik numarası 11 haneli olmalıdır.",
+    };
   }
 
   // PayTR kuralı: e-posta en fazla 100 karakter ve Türkçe karakter içermemeli.
@@ -196,7 +214,7 @@ export async function POST(request: NextRequest) {
       paymentAmountKurus: Math.round(grandTotal * 100),
       basket,
       userName: `${buyer.name} ${buyer.surname}`,
-      userAddress: `${buyer.address}, ${buyer.city}`.slice(0, 400),
+      userAddress: `${buyer.address}, ${buyer.district}/${buyer.city}`.slice(0, 400),
       userPhone: buyer.phone,
       okUrl: `${SITE_CONFIG.url}/odeme/basarili`,
       failUrl: `${SITE_CONFIG.url}/odeme/basarisiz`,
@@ -237,6 +255,8 @@ export async function POST(request: NextRequest) {
         customerEmail: buyer.email,
         customerPhone: buyer.phone,
         customerCity: buyer.city,
+        customerDistrict: buyer.district,
+        ...(buyer.taxNumber ? { customerTaxNumber: buyer.taxNumber } : {}),
         customerAddress: buyer.address,
         items: lines.map((line, index) => ({
           _type: "orderItem",

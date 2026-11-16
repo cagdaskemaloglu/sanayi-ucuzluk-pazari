@@ -16,8 +16,12 @@ export interface PricingOption {
    * (normalizePricingOptions) bunu adet sayısıyla çarparak buraya yazar.
    */
   price: number;
-  /** Sanity'ye girilen adet başı KDV hariç fiyat (gösterim için). */
+  /** Adet başı KDV hariç fiyat (indirim varsa indirimli). */
   piecePrice?: number;
+  /** İndirim uygulandıysa indirimsiz birim fiyatı (üstü çizili gösterilir). */
+  originalPrice?: number;
+  /** İndirim uygulandıysa indirimsiz adet fiyatı. */
+  originalPiecePrice?: number;
   bulkTiers?: BulkTier[];
 }
 
@@ -28,6 +32,14 @@ export interface Category {
   order?: number;
   description?: string;
   _updatedAt?: string;
+  /** Alt kategoriyse bağlı olduğu ana kategori. */
+  parent?: CategoryRef | null;
+}
+
+export interface CategoryRef {
+  _id: string;
+  title: string;
+  slug: string;
 }
 
 export interface ProductListItem {
@@ -40,11 +52,9 @@ export interface ProductListItem {
   featured?: boolean;
   vatRate?: number;
   _updatedAt?: string;
-  category: {
-    _id: string;
-    title: string;
-    slug: string;
-  };
+  category: CategoryRef & { parent?: CategoryRef | null };
+  /** Ürüne uygulanan indirim (fetchers tarafından eklenir). */
+  appliedDiscount?: { title: string; label: string };
 }
 
 export interface ProductDetail extends ProductListItem {
@@ -80,6 +90,8 @@ export interface SiteSettings {
   deliveryMaxDays?: number;
   returnDays?: number;
   freeReturns?: boolean;
+  shippingCutoffHour?: number;
+  sundayShipping?: boolean;
 }
 
 export interface BlogPostListItem {
@@ -105,6 +117,7 @@ export type PortableTextBlockLike = Record<string, unknown>;
 export interface ProductCheckoutData {
   _id: string;
   name: string;
+  category?: { _id?: string; parent?: { _id?: string } | null } | null;
   stockStatus: "in_stock" | "out_of_stock";
   vatRate?: number;
   pricingOptions: PricingOption[];

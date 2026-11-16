@@ -3,6 +3,7 @@ import { productType } from "./product";
 import { siteSettingsType } from "./siteSettings";
 import { postType } from "./post";
 import { orderType } from "./order";
+import { discountType } from "./discount";
 
 export const schemaTypes = [
   categoryType,
@@ -10,4 +11,5 @@ export const schemaTypes = [
   siteSettingsType,
   postType,
   orderType,
+  discountType,
 ];

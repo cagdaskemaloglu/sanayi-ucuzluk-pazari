@@ -52,7 +52,7 @@ export default async function MesafeliSatisSozlesmesiPage() {
             görüşme sonucunda kesinleşir.
           </li>
           <li>
-            <span className="font-medium">Online ödeme ile:</span> Online Öde
+            <span className="font-medium">Online ödeme ile:</span> Kartla Öde
             butonu ile, ödeme kuruluşu PayTR&apos;nin güvenli ödeme sayfası
             üzerinden kredi/banka kartıyla ödeme yapar. Kart bilgileri
             Satıcı&apos;ya iletilmez ve Site&apos;de saklanmaz. Ödemenin

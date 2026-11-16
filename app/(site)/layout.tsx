@@ -1,5 +1,7 @@
 import { SiteHeader } from "@/components/features/header/site-header";
 import { TopContactBar } from "@/components/features/header/top-contact-bar";
+import { FreeShippingBar } from "@/components/features/header/free-shipping-bar";
+import { StoreSettingsProvider } from "@/lib/store/store-settings";
 import { SiteFooter } from "@/components/features/footer/site-footer";
 import { AboutSection } from "@/components/features/about/about-section";
 import { WhatsappFloatingButton } from "@/components/features/whatsapp-button/whatsapp-floating-button";
@@ -21,20 +23,31 @@ export default async function SiteLayout({
   children: React.ReactNode;
 }) {
   const siteSettings = await getSiteSettings();
+  const storeSettings = {
+    delivery: {
+      cutoffHour: siteSettings?.shippingCutoffHour ?? null,
+      sundayShipping: siteSettings?.sundayShipping ?? null,
+    },
+    shipping: pickShippingSettings(siteSettings),
+  };
 
   return (
-    <CartProvider>
-      <TopContactBar siteSettings={siteSettings} />
-      <SiteHeader siteSettings={siteSettings} />
-      <main className="min-h-[60vh]">{children}</main>
-      <AboutSection siteSettings={siteSettings} />
-      <SiteFooter siteSettings={siteSettings} />
-      <WhatsappFloatingButton whatsappNumber={siteSettings?.whatsappNumber} />
-      <CartSheet
-        whatsappNumber={siteSettings?.whatsappNumber}
-        shipping={pickShippingSettings(siteSettings)}
-      />
-      <Analytics />
-    </CartProvider>
+    <StoreSettingsProvider value={storeSettings}>
+      <CartProvider>
+        <TopContactBar siteSettings={siteSettings} />
+        <FreeShippingBar siteSettings={siteSettings} />
+        <SiteHeader siteSettings={siteSettings} />
+        {/* pb: sağ alttaki WhatsApp butonu sayfa sonundaki içeriği örtmesin */}
+        <main className="min-h-[60vh] pb-16">{children}</main>
+        <AboutSection siteSettings={siteSettings} />
+        <SiteFooter siteSettings={siteSettings} />
+        <WhatsappFloatingButton whatsappNumber={siteSettings?.whatsappNumber} />
+        <CartSheet
+          whatsappNumber={siteSettings?.whatsappNumber}
+          shipping={pickShippingSettings(siteSettings)}
+        />
+        <Analytics />
+      </CartProvider>
+    </StoreSettingsProvider>
   );
 }

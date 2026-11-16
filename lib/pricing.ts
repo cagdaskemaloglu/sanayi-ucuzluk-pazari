@@ -61,28 +61,124 @@ export function piecesInUnit(option: Pick<PricingOption, "unitType" | "piecesPer
   return option.piecesPerUnit && option.piecesPerUnit > 0 ? option.piecesPerUnit : 1;
 }
 
+/** Sitede uygulanan, aktif bir indirim kampanyası (Sanity "discount"). */
+export interface ActiveDiscount {
+  _id: string;
+  title: string;
+  scope: "all" | "categories" | "products";
+  discountType: "percent" | "amount";
+  value: number;
+  categoryIds?: string[] | null;
+  productIds?: string[] | null;
+}
+
+export interface AppliedDiscount {
+  title: string;
+  /** Rozet metni: "%10 İndirim" veya "5 ₺ İndirim". */
+  label: string;
+}
+
+/** Adet başı KDV hariç fiyata indirimi uygular (0'ın altına inmez). */
+export function applyDiscountToPiecePrice(piecePrice: number, discount: ActiveDiscount): number {
+  const discounted =
+    discount.discountType === "percent"
+      ? piecePrice * (1 - discount.value / 100)
+      : piecePrice - discount.value;
+  return round2(Math.max(0, discounted));
+}
+
+type DiscountableProduct = {
+  _id: string;
+  pricingOptions?: PricingOption[] | null;
+  category?: { _id?: string; parent?: { _id?: string } | null } | null;
+};
+
+function isDiscountApplicable(product: DiscountableProduct, discount: ActiveDiscount): boolean {
+  if (!(discount.value > 0)) return false;
+  if (discount.scope === "all") return true;
+  if (discount.scope === "products") {
+    return Boolean(discount.productIds?.includes(product._id));
+  }
+  if (discount.scope === "categories") {
+    const ids = [product.category?._id, product.category?.parent?._id].filter(Boolean);
+    return ids.some((id) => discount.categoryIds?.includes(id as string));
+  }
+  return false;
+}
+
 /**
- * Sanity'de kutu/koli/palet fiyatları (ve toplu alım kademe fiyatları)
- * ADET BAŞI girilir — örn. "Koli (24 adet) — 41 ₺" = koli alınırsa adet
- * başı 41 ₺, yani 1 koli 984 ₺. Sitenin geri kalanı (sepet, ödeme,
- * WhatsApp, katalog, Google) birim fiyatıyla çalıştığı için, veri
- * Sanity'den okunduğu anda burada birim (koli) fiyatına çevrilir.
+ * Ürüne uyan indirimlerden müşteri için en avantajlı olanı seçer
+ * (indirimler toplanmaz). Karşılaştırma ilk satış biriminin adet fiyatıyla.
  */
-export function normalizePricingOptions<T extends { pricingOptions?: PricingOption[] | null }>(
-  product: T
-): T {
+export function findBestDiscount(
+  product: DiscountableProduct,
+  discounts: ActiveDiscount[]
+): ActiveDiscount | undefined {
+  const basePrice = product.pricingOptions?.[0]?.price;
+  if (basePrice === undefined) return undefined;
+  let best: ActiveDiscount | undefined;
+  let bestPrice = basePrice;
+  for (const discount of discounts) {
+    if (!isDiscountApplicable(product, discount)) continue;
+    const price = applyDiscountToPiecePrice(basePrice, discount);
+    // Fiyatı 0'a (veya altına) indiren indirim bu ürüne uygulanmaz —
+    // yanlış girilmiş bir tutar ürünün bedavaya satılmasına yol açmasın.
+    if (price <= 0) continue;
+    if (price < bestPrice) {
+      best = discount;
+      bestPrice = price;
+    }
+  }
+  return best;
+}
+
+export function discountLabel(discount: ActiveDiscount): string {
+  return discount.discountType === "percent"
+    ? `%${discount.value.toLocaleString("tr-TR")} İndirim`
+    : `${discount.value.toLocaleString("tr-TR")} ₺ İndirim`;
+}
+
+/**
+ * Sanity'den okunan ürün fiyatlarını sitenin kullandığı biçime çevirir:
+ *
+ * 1) Kutu/koli/palet fiyatları (ve toplu alım kademe fiyatları) Sanity'de
+ *    ADET BAŞI girilir — örn. "Koli (24 adet) — 41 ₺" = 1 koli 984 ₺.
+ *    Sitenin geri kalanı (sepet, ödeme, WhatsApp, katalog, Google) birim
+ *    fiyatıyla çalıştığı için burada birim (koli) fiyatına çevrilir.
+ * 2) Aktif indirim varsa adet fiyatına uygulanır; eski fiyat
+ *    originalPrice / originalPiecePrice olarak saklanır (üstü çizili
+ *    gösterim için), price artık indirimli fiyattır.
+ */
+export function normalizePricingOptions<T extends DiscountableProduct>(
+  product: T,
+  discounts: ActiveDiscount[] = []
+): T & { appliedDiscount?: AppliedDiscount } {
   if (!product?.pricingOptions?.length) return product;
+  const discount = findBestDiscount(product, discounts);
+  const discountPiece = (piecePrice: number) =>
+    discount ? applyDiscountToPiecePrice(piecePrice, discount) : piecePrice;
+
   return {
     ...product,
+    ...(discount
+      ? { appliedDiscount: { title: discount.title, label: discountLabel(discount) } }
+      : {}),
     pricingOptions: product.pricingOptions.map((option) => {
       const pieces = piecesInUnit(option);
+      const piecePrice = discountPiece(option.price);
       return {
         ...option,
-        piecePrice: option.price,
-        price: round2(option.price * pieces),
+        piecePrice,
+        price: round2(piecePrice * pieces),
+        ...(discount
+          ? {
+              originalPiecePrice: option.price,
+              originalPrice: round2(option.price * pieces),
+            }
+          : {}),
         bulkTiers: option.bulkTiers?.map((tier) => ({
           ...tier,
-          price: round2(tier.price * pieces),
+          price: round2(discountPiece(tier.price) * pieces),
         })),
       };
     }),

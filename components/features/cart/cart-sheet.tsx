@@ -58,6 +58,11 @@ export function CartSheet({ whatsappNumber, shipping }: CartSheetProps) {
   const shippingFee = calculateShippingFee(totalPriceIncludingVat, shipping);
   const onlineTotal =
     Math.round((totalPriceIncludingVat + shippingFee) * 100) / 100;
+  const freeThreshold = shipping?.freeShippingThreshold;
+  const remainingForFreeShipping =
+    shippingFee > 0 && freeThreshold
+      ? Math.round((freeThreshold - totalPriceIncludingVat) * 100) / 100
+      : 0;
   const canSend = items.length > 0 && isVerified;
 
   function handleSendToWhatsapp() {
@@ -279,7 +284,7 @@ export function CartSheet({ whatsappNumber, shipping }: CartSheetProps) {
               )}
 
               {/* KDV dökümü — her ürünün KDV'si ayrı satırda, altında
-                  KDV dahil genel toplamı gösteren Online Öde butonu. */}
+                  KDV dahil genel toplamı gösteren Kartla Öde butonu. */}
               <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
                 <p className="text-xs font-medium text-gray-500">
                   Ürün Bazında KDV
@@ -308,14 +313,20 @@ export function CartSheet({ whatsappNumber, shipping }: CartSheetProps) {
                   </span>
                 </div>
                 <div className="mt-1 flex items-center justify-between text-xs text-gray-500">
-                  <span>Kargo (online ödemede)</span>
+                  <span>Kargo (kartla ödemede)</span>
                   <span className="font-medium text-gray-700">
                     {shippingFee > 0 ? formatPrice(shippingFee) : "Ücretsiz"}
                   </span>
                 </div>
+                {remainingForFreeShipping > 0 && (
+                  <p className="mt-1 text-xs font-medium text-green-700">
+                    {formatPrice(remainingForFreeShipping)} daha ekleyin, kargo
+                    ücretsiz olsun.
+                  </p>
+                )}
               </div>
 
-              {/* Online Öde — KDV DAHİL genel toplamı gösterir, /odeme
+              {/* Kartla Öde — KDV DAHİL genel toplamı gösterir, /odeme
                   sayfasına yönlendirir (PayTR iFrame akışı). */}
               <Link
                 href="/odeme"
@@ -323,7 +334,7 @@ export function CartSheet({ whatsappNumber, shipping }: CartSheetProps) {
                 className="flex w-full items-center justify-center gap-2 rounded-md bg-brand-navy px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-navy-dark"
               >
                 <CreditCard className="h-4 w-4" />
-                Online Öde — {formatPrice(onlineTotal)}{" "}
+                Kartla Öde — {formatPrice(onlineTotal)}{" "}
                 <span className="font-normal">
                   ({shippingFee > 0 ? "KDV ve kargo dahil" : "KDV dahil"})
                 </span>

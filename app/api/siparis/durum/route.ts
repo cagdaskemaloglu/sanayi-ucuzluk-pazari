@@ -38,7 +38,7 @@ interface StoredOrder extends OrderForStatusEmail {
 const ORDER_QUERY = `*[_type == "order" && _id == $id][0]{
   _id, _rev, status, orderNumber,
   customerName, customerSurname, customerEmail, customerPhone,
-  customerCity, customerAddress,
+  customerCity, customerDistrict, customerAddress, customerTaxNumber,
   items[]{ productName, unitLabel, quantity, lineTotal },
   totalIncludingVat, shippingFee, grandTotal, paidTotal,
   carrier, trackingNumber, trackingUrl, statusNote,

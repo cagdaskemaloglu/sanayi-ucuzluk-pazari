@@ -14,7 +14,7 @@ export function FeaturedProducts({ products }: { products: ProductListItem[] }) 
         </h2>
         <div className="scrollbar-hide mt-4 flex gap-4 overflow-x-auto pb-1">
           {products.map((product) => (
-            <div key={product._id} className="w-40 shrink-0 sm:w-48">
+            <div key={product._id} className="w-56 shrink-0 sm:w-60">
               <ProductCard product={product} />
             </div>
           ))}

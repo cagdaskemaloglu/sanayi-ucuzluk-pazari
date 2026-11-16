@@ -6,6 +6,7 @@ import { useCart } from "@/lib/cart/cart-context";
 import { formatPrice } from "@/lib/pricing";
 import { PaytrCheckoutFrame } from "@/components/features/checkout/paytr-checkout-frame";
 import { calculateShippingFee, type ShippingSettings } from "@/lib/shipping";
+import { TR_PROVINCES, getDistricts } from "@/lib/data/tr-locations";
 
 interface BuyerForm {
   name: string;
@@ -13,7 +14,9 @@ interface BuyerForm {
   email: string;
   phone: string;
   city: string;
+  district: string;
   address: string;
+  taxNumber: string;
 }
 
 const EMPTY_FORM: BuyerForm = {
@@ -22,7 +25,9 @@ const EMPTY_FORM: BuyerForm = {
   email: "",
   phone: "",
   city: "",
+  district: "",
   address: "",
+  taxNumber: "",
 };
 
 // Sepetteki "Ad Soyad" tek alan; ödeme formunda ad ve soyad ayrı. Son
@@ -112,8 +117,15 @@ export function OdemeClient({ shipping }: OdemeClientProps) {
   const [paymentToken, setPaymentToken] = useState<string | null>(null);
 
   function updateField(field: keyof BuyerForm, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+      // İl değişince ilçe seçimi sıfırlanır.
+      ...(field === "city" ? { district: "" } : {}),
+    }));
   }
+
+  const districts = form.city ? getDistricts(form.city) : [];
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -246,16 +258,48 @@ export function OdemeClient({ shipping }: OdemeClientProps) {
           />
         </Field>
 
-        <Field label="Şehir" htmlFor="buyer-city">
-          <input
-            id="buyer-city"
-            required
-            autoComplete="address-level1"
-            value={form.city}
-            onChange={(event) => updateField("city", event.target.value)}
-            className={inputClass}
-          />
-        </Field>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="İl" htmlFor="buyer-city">
+            <select
+              id="buyer-city"
+              required
+              autoComplete="address-level1"
+              value={form.city}
+              onChange={(event) => updateField("city", event.target.value)}
+              className={`${inputClass} bg-white`}
+            >
+              <option value="" disabled>
+                İl seçin
+              </option>
+              {TR_PROVINCES.map((province) => (
+                <option key={province.il} value={province.il}>
+                  {province.il}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="İlçe" htmlFor="buyer-district">
+            <select
+              id="buyer-district"
+              required
+              autoComplete="address-level2"
+              value={form.district}
+              disabled={!form.city}
+              onChange={(event) => updateField("district", event.target.value)}
+              className={`${inputClass} bg-white disabled:bg-gray-50 disabled:text-gray-400`}
+            >
+              <option value="" disabled>
+                {form.city ? "İlçe seçin" : "Önce il seçin"}
+              </option>
+              {districts.map((district) => (
+                <option key={district} value={district}>
+                  {district}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
 
         <Field label="Adres" htmlFor="buyer-address">
           <textarea
@@ -266,6 +310,20 @@ export function OdemeClient({ shipping }: OdemeClientProps) {
             value={form.address}
             onChange={(event) => updateField("address", event.target.value)}
             className={`${inputClass} resize-none`}
+          />
+        </Field>
+
+        <Field label="Vergi Kimlik No / TC Kimlik No (opsiyonel)" htmlFor="buyer-tax-number">
+          <input
+            id="buyer-tax-number"
+            inputMode="numeric"
+            autoComplete="off"
+            value={form.taxNumber}
+            onChange={(event) =>
+              updateField("taxNumber", event.target.value.replace(/\D/g, "").slice(0, 11))
+            }
+            placeholder="Firma adına fatura için 10 haneli VKN"
+            className={inputClass}
           />
         </Field>
 

@@ -72,6 +72,9 @@ export default async function CategoryPage({
       <JsonLd
         data={buildBreadcrumbJsonLd([
           { name: "Ürünlerimiz", path: "/" },
+          ...(category.parent
+            ? [{ name: category.parent.title, path: `/kategori/${category.parent.slug}` }]
+            : []),
           { name: category.title, path: `/kategori/${category.slug}` },
         ])}
       />
@@ -82,6 +85,17 @@ export default async function CategoryPage({
           <Link href="/" className="hover:text-brand-navy">
             Ürünlerimiz
           </Link>
+          {category.parent && (
+            <>
+              <span className="mx-2">/</span>
+              <Link
+                href={`/kategori/${category.parent.slug}`}
+                className="hover:text-brand-navy"
+              >
+                {category.parent.title}
+              </Link>
+            </>
+          )}
           <span className="mx-2">/</span>
           <span className="text-gray-700">{category.title}</span>
         </nav>

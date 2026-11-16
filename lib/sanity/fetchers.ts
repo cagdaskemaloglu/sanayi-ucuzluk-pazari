@@ -5,6 +5,7 @@ import {
   PRODUCTS_QUERY,
   PRODUCTS_BY_IDS_QUERY,
   PRODUCTS_FEED_QUERY,
+  ACTIVE_DISCOUNTS_QUERY,
   FEATURED_PRODUCTS_QUERY,
   PRODUCT_BY_SLUG_QUERY,
   SITE_SETTINGS_QUERY,
@@ -21,13 +22,33 @@ import type {
   SiteSettings,
 } from "./types";
 
-import { normalizePricingOptions } from "@/lib/pricing";
+import { cache } from "react";
+import { normalizePricingOptions, type ActiveDiscount } from "@/lib/pricing";
 
 // cache: "no-store" → Next.js bu istekleri asla önbelleğe almaz, Studio'da
 // yapılan her değişiklik (Publish edildiği anda) sitede hemen görünür.
 // Trafik arttıkça performans için ileride ISR/on-demand revalidation'a
 // geçilebilir, ama şu an için güncel içerik önceliğimiz.
 const FETCH_OPTIONS = { cache: "no-store" as const };
+
+// Aktif indirimler. Aynı istek (sayfa render'ı) içinde birden çok ürün
+// sorgusu yapılsa da Sanity'ye bir kez gidilir (React cache). İndirimler
+// okunamazsa site indirimsiz fiyatlarla çalışmaya devam eder.
+export const getActiveDiscounts = cache(async (): Promise<ActiveDiscount[]> => {
+  try {
+    return await client.fetch(ACTIVE_DISCOUNTS_QUERY, {}, FETCH_OPTIONS);
+  } catch (error) {
+    console.error("İndirimler okunamadı, indirimsiz devam ediliyor:", error);
+    return [];
+  }
+});
+
+async function withPricing<T extends Parameters<typeof normalizePricingOptions>[0]>(
+  products: T[]
+): Promise<T[]> {
+  const discounts = await getActiveDiscounts();
+  return products.map((product) => normalizePricingOptions(product, discounts));
+}
 
 export async function getCategories(): Promise<Category[]> {
   return client.fetch(CATEGORIES_QUERY, {}, FETCH_OPTIONS);
@@ -51,7 +72,7 @@ export async function getProducts(params?: {
     },
     FETCH_OPTIONS
   );
-  return products.map(normalizePricingOptions);
+  return withPricing(products);
 }
 
 export async function getFeaturedProducts(): Promise<ProductListItem[]> {
@@ -60,7 +81,7 @@ export async function getFeaturedProducts(): Promise<ProductListItem[]> {
     {},
     FETCH_OPTIONS
   );
-  return products.map(normalizePricingOptions);
+  return withPricing(products);
 }
 
 export async function getProductBySlug(
@@ -71,7 +92,7 @@ export async function getProductBySlug(
     { slug },
     FETCH_OPTIONS
   );
-  return product ? normalizePricingOptions(product) : null;
+  return product ? (await withPricing([product]))[0] : null;
 }
 
 export async function getSiteSettings(): Promise<SiteSettings | null> {
@@ -96,7 +117,7 @@ export async function getProductsByIds(
     { ids },
     FETCH_OPTIONS
   );
-  return products.map(normalizePricingOptions);
+  return withPricing(products);
 }
 
 export async function getProductsForFeed(): Promise<ProductDetail[]> {
@@ -105,5 +126,5 @@ export async function getProductsForFeed(): Promise<ProductDetail[]> {
     {},
     FETCH_OPTIONS
   );
-  return products.map(normalizePricingOptions);
+  return withPricing(products);
 }

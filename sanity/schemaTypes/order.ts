@@ -166,7 +166,22 @@ export const orderType = defineType({
     defineField({
       name: "customerCity",
       group: "musteri",
-      title: "Şehir",
+      title: "İl",
+      type: "string",
+      readOnly: true,
+    }),
+    defineField({
+      name: "customerDistrict",
+      group: "musteri",
+      title: "İlçe",
+      type: "string",
+      readOnly: true,
+    }),
+    defineField({
+      name: "customerTaxNumber",
+      group: "musteri",
+      title: "Vergi Kimlik No / TC Kimlik No",
+      description: "Müşteri fatura için girdiyse.",
       type: "string",
       readOnly: true,
     }),

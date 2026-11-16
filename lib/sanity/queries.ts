@@ -7,7 +7,8 @@ export const CATEGORIES_QUERY = groq`
     "slug": slug.current,
     order,
     description,
-    _updatedAt
+    _updatedAt,
+    "parent": parent->{ _id, title, "slug": slug.current }
   }
 `;
 
@@ -18,7 +19,8 @@ export const CATEGORY_BY_SLUG_QUERY = groq`
     "slug": slug.current,
     order,
     description,
-    _updatedAt
+    _updatedAt,
+    "parent": parent->{ _id, title, "slug": slug.current }
   }
 `;
 
@@ -26,7 +28,9 @@ export const CATEGORY_BY_SLUG_QUERY = groq`
 // böylece tek sorgu hem "tüm ürünler" hem filtreli listeleme için kullanılabilir.
 export const PRODUCTS_QUERY = groq`
   *[_type == "product"
-    && (!defined($categorySlug) || category->slug.current == $categorySlug)
+    && (!defined($categorySlug)
+      || category->slug.current == $categorySlug
+      || category->parent->slug.current == $categorySlug)
     && (!defined($search) || name match $search + "*")
   ] | order(_createdAt desc) {
     _id,
@@ -38,7 +42,7 @@ export const PRODUCTS_QUERY = groq`
     pricingOptions,
     featured,
     vatRate,
-    "category": category->{ _id, title, "slug": slug.current }
+    "category": category->{ _id, title, "slug": slug.current, "parent": parent->{ _id, title, "slug": slug.current } }
   }
 `;
 
@@ -52,7 +56,7 @@ export const FEATURED_PRODUCTS_QUERY = groq`
     pricingOptions,
     featured,
     vatRate,
-    "category": category->{ _id, title, "slug": slug.current }
+    "category": category->{ _id, title, "slug": slug.current, "parent": parent->{ _id, title, "slug": slug.current } }
   }
 `;
 
@@ -73,7 +77,7 @@ export const PRODUCT_BY_SLUG_QUERY = groq`
     pricingOptions,
     featured,
     vatRate,
-    "category": category->{ _id, title, "slug": slug.current }
+    "category": category->{ _id, title, "slug": slug.current, "parent": parent->{ _id, title, "slug": slug.current } }
   }
 `;
 
@@ -101,7 +105,9 @@ export const SITE_SETTINGS_QUERY = groq`
     deliveryMinDays,
     deliveryMaxDays,
     returnDays,
-    freeReturns
+    freeReturns,
+    shippingCutoffHour,
+    sundayShipping
   }
 `;
 
@@ -133,6 +139,7 @@ export const PRODUCTS_BY_IDS_QUERY = groq`
   *[_type == "product" && _id in $ids] {
     _id,
     name,
+    "category": category->{ _id, "parent": parent->{ _id } },
     stockStatus,
     vatRate,
     pricingOptions
@@ -157,6 +164,22 @@ export const PRODUCTS_FEED_QUERY = groq`
     pricingOptions,
     featured,
     vatRate,
-    "category": category->{ _id, title, "slug": slug.current }
+    "category": category->{ _id, title, "slug": slug.current, "parent": parent->{ _id, title, "slug": slug.current } }
+  }
+`;
+
+// Şu an geçerli indirimler (aktif ve tarih aralığında).
+export const ACTIVE_DISCOUNTS_QUERY = groq`
+  *[_type == "discount" && active != false && defined(value) && value > 0
+    && (!defined(startsAt) || startsAt <= now())
+    && (!defined(endsAt) || endsAt > now())
+  ] {
+    _id,
+    title,
+    scope,
+    discountType,
+    value,
+    "categoryIds": categories[]._ref,
+    "productIds": products[]._ref
   }
 `;

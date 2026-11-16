@@ -88,7 +88,13 @@ export async function GET() {
           "g:availability",
           product.stockStatus === "out_of_stock" ? "out_of_stock" : "in_stock"
         ) +
-        tag("g:price", `${price.toFixed(2)} TRY`) +
+        // İndirim varsa: g:price indirimsiz, g:sale_price indirimli fiyat.
+        (option.originalPrice !== undefined && option.originalPrice > option.price
+          ? tag(
+              "g:price",
+              `${priceIncludingVat(option.originalPrice, product.vatRate).toFixed(2)} TRY`
+            ) + tag("g:sale_price", `${price.toFixed(2)} TRY`)
+          : tag("g:price", `${price.toFixed(2)} TRY`)) +
         tag("g:condition", "new") +
         tag("g:brand", product.brand) +
         tag("g:gtin", product.gtin) +
