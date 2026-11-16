@@ -7,6 +7,17 @@ export const UNIT_LABELS: Record<string, string> = {
 
 import type { PricingOption } from "@/lib/sanity/types";
 
+// Satış birimlerinin sitede gösterim sırası: en küçükten büyüğe. İlk sıradaki
+// birim (genelde Adet) ürün kartında ve ürün sayfasında varsayılan seçili
+// gelir ve Google'a bildirilen temsili fiyat olur.
+const UNIT_ORDER: Record<string, number> = { adet: 0, kutu: 1, koli: 2, palet: 3 };
+
+export function sortPricingOptions<T extends Pick<PricingOption, "unitType">>(options: T[]): T[] {
+  return [...options].sort(
+    (a, b) => (UNIT_ORDER[a.unitType] ?? 99) - (UNIT_ORDER[b.unitType] ?? 99)
+  );
+}
+
 export function formatPrice(price: number) {
   return `${price.toLocaleString("tr-TR")} ₺`;
 }
@@ -145,7 +156,9 @@ export function discountLabel(discount: ActiveDiscount): string {
  *    ADET BAŞI girilir — örn. "Koli (24 adet) — 41 ₺" = 1 koli 984 ₺.
  *    Sitenin geri kalanı (sepet, ödeme, WhatsApp, katalog, Google) birim
  *    fiyatıyla çalıştığı için burada birim (koli) fiyatına çevrilir.
- * 2) Aktif indirim varsa adet fiyatına uygulanır; eski fiyat
+ * 2) Birimler Adet → Kutu → Koli → Palet sırasına dizilir (ilk birim
+ *    kartta ve ürün sayfasında varsayılan seçili gelir).
+ * 3) Aktif indirim varsa adet fiyatına uygulanır; eski fiyat
  *    originalPrice / originalPiecePrice olarak saklanır (üstü çizili
  *    gösterim için), price artık indirimli fiyattır.
  */
@@ -154,7 +167,8 @@ export function normalizePricingOptions<T extends DiscountableProduct>(
   discounts: ActiveDiscount[] = []
 ): T & { appliedDiscount?: AppliedDiscount } {
   if (!product?.pricingOptions?.length) return product;
-  const discount = findBestDiscount(product, discounts);
+  const sortedOptions = sortPricingOptions(product.pricingOptions);
+  const discount = findBestDiscount({ ...product, pricingOptions: sortedOptions }, discounts);
   const discountPiece = (piecePrice: number) =>
     discount ? applyDiscountToPiecePrice(piecePrice, discount) : piecePrice;
 
@@ -163,7 +177,7 @@ export function normalizePricingOptions<T extends DiscountableProduct>(
     ...(discount
       ? { appliedDiscount: { title: discount.title, label: discountLabel(discount) } }
       : {}),
-    pricingOptions: product.pricingOptions.map((option) => {
+    pricingOptions: sortedOptions.map((option) => {
       const pieces = piecesInUnit(option);
       const piecePrice = discountPiece(option.price);
       return {
