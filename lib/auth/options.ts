@@ -188,7 +188,14 @@ export const authOptions: NextAuthOptions = {
 
 /** Sunucu tarafında oturumdaki üye (yoksa null). */
 export async function getCurrentCustomerSession() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id || !session.user.email) return null;
-  return { id: session.user.id, email: session.user.email, name: session.user.name ?? "" };
+  // NEXTAUTH_SECRET tanımlı değilse NextAuth hata fırlatır; bu durumda
+  // siteyi kırmak yerine "giriş yapılmamış" sayıp devam ediyoruz.
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id || !session.user.email) return null;
+    return { id: session.user.id, email: session.user.email, name: session.user.name ?? "" };
+  } catch (error) {
+    console.error("Oturum okunamadı (NEXTAUTH_SECRET tanımlı mı?):", error);
+    return null;
+  }
 }
