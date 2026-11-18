@@ -45,7 +45,7 @@ function cityLine(order: { customerCity: string; customerDistrict?: string }): s
     : order.customerCity;
 }
 
-function escapeHtml(value: string | number | undefined | null): string {
+export function escapeHtml(value: string | number | undefined | null): string {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -109,7 +109,7 @@ function itemsText(order: PaidOrderForEmail): string {
   ].join("\n");
 }
 
-function wrap(title: string, body: string): string {
+export function wrap(title: string, body: string): string {
   return `<!doctype html><html lang="tr"><body style="margin:0;background:#f6f7f9;font-family:Arial,Helvetica,sans-serif;color:#1f2937">
     <div style="max-width:600px;margin:0 auto;padding:24px">
       <div style="background:#ffffff;border-radius:8px;padding:24px">

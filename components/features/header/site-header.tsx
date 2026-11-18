@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CartButton } from "@/components/features/cart/cart-button";
+import { AccountButton } from "@/components/features/account/account-button";
 import { SITE_CONFIG } from "@/lib/constants";
 import { urlForImage } from "@/lib/sanity/image";
 import type { SiteSettings } from "@/lib/sanity/types";
@@ -52,7 +53,8 @@ export function SiteHeader({ siteSettings }: SiteHeaderProps) {
             )}
           </span>
         </Link>
-        <div className="shrink-0">
+        <div className="flex shrink-0 items-center gap-2">
+          <AccountButton />
           <CartButton />
         </div>
       </div>

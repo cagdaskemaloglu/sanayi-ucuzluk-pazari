@@ -136,6 +136,16 @@ export const orderType = defineType({
       ],
     }),
     defineField({
+      name: "customer",
+      group: "musteri",
+      title: "Üye Hesabı",
+      description: "Sipariş üye girişi yapılarak verildiyse bağlı üye. Boşsa üyeliksiz sipariş.",
+      type: "reference",
+      to: [{ type: "customer" }],
+      weak: true,
+      readOnly: true,
+    }),
+    defineField({
       name: "customerName",
       group: "musteri",
       title: "Ad",

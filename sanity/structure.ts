@@ -57,8 +57,19 @@ export const structure: StructureResolver = (S) =>
               orderList(S, "orders-all", "Tüm Siparişler", "true"),
             ])
         ),
+      S.listItem()
+        .id("customers")
+        .title("Üyeler")
+        .child(
+          S.documentList()
+            .id("customers")
+            .title("Üyeler")
+            .schemaType("customer")
+            .filter('_type == "customer"')
+            .defaultOrdering([{ field: "_createdAt", direction: "desc" }])
+        ),
       S.divider(),
       ...S.documentTypeListItems().filter(
-        (listItem) => !["siteSettings", "order"].includes(listItem.getId() ?? "")
+        (listItem) => !["siteSettings", "order", "customer"].includes(listItem.getId() ?? "")
       ),
     ]);

@@ -70,11 +70,36 @@ function Field({
   );
 }
 
-interface OdemeClientProps {
-  shipping: ShippingSettings;
+/** Giriş yapmış üyenin kayıtlı bilgileri (ödeme formunu doldurmak için). */
+export interface MemberDefaults {
+  fullName: string;
+  email: string;
+  phone: string;
+  city: string;
+  district: string;
+  address: string;
+  taxNumber: string;
 }
 
-export function OdemeClient({ shipping }: OdemeClientProps) {
+interface OdemeClientProps {
+  shipping: ShippingSettings;
+  member?: MemberDefaults | null;
+}
+
+function buyerFromMember(member?: MemberDefaults | null): Partial<BuyerForm> {
+  if (!member) return {};
+  const fromName = buyerFromCart(member.fullName, member.address, member.phone);
+  const entries = Object.entries({
+    ...fromName,
+    email: member.email,
+    city: member.city,
+    district: member.district,
+    taxNumber: member.taxNumber,
+  }).filter(([, value]) => Boolean(value));
+  return Object.fromEntries(entries) as Partial<BuyerForm>;
+}
+
+export function OdemeClient({ shipping, member }: OdemeClientProps) {
   const {
     items,
     customerName,
@@ -91,10 +116,15 @@ export function OdemeClient({ shipping }: OdemeClientProps) {
   const remainingForFreeShipping =
     shippingFee > 0 && threshold ? threshold - totalPriceIncludingVat : 0;
 
-  const [form, setForm] = useState<BuyerForm>(() => ({
-    ...EMPTY_FORM,
-    ...buyerFromCart(customerName, customerAddress, customerPhone),
-  }));
+  // Öncelik: üyenin kayıtlı bilgileri, boş kalanlar sepete yazılanlardan.
+  const [form, setForm] = useState<BuyerForm>(() => {
+    const fromCart = buyerFromCart(customerName, customerAddress, customerPhone);
+    const next: BuyerForm = { ...EMPTY_FORM, ...buyerFromMember(member) };
+    for (const key of Object.keys(fromCart) as (keyof BuyerForm)[]) {
+      if (!next[key].trim() && fromCart[key]) next[key] = fromCart[key] ?? "";
+    }
+    return next;
+  });
 
   // Sayfa doğrudan açıldıysa (veya yenilendiyse) sepet localStorage'dan
   // biraz sonra yüklenir; o an hâlâ boş olan alanları sepetteki bilgilerle
@@ -188,6 +218,18 @@ export function OdemeClient({ shipping }: OdemeClientProps) {
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
       <h1 className="text-xl font-bold text-brand-navy">Ödeme Bilgileri</h1>
+      {!member && (
+        <p className="mt-1 text-sm text-gray-500">
+          <Link href="/giris?callbackUrl=/odeme" className="font-medium text-brand-navy hover:underline">
+            Giriş yapın
+          </Link>{" "}
+          veya{" "}
+          <Link href="/kayit?callbackUrl=/odeme" className="font-medium text-brand-navy hover:underline">
+            üye olun
+          </Link>
+          ; siparişlerinizi hesabınızdan takip edin. Üye olmadan da sipariş verebilirsiniz.
+        </p>
+      )}
       <div className="mt-3 space-y-1 rounded-md border border-gray-200 bg-white p-3 text-sm">
         <div className="flex justify-between text-gray-600">
           <span>Ürünler (KDV dahil)</span>

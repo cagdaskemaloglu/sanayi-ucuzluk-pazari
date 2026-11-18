@@ -34,14 +34,30 @@ export default async function KvkkPage() {
           (paylaşmanız halinde), talep ettiğiniz ürün bilgileri ve
           iletmek istediğiniz mesaj/not içeriği tarafımızca işlenmektedir.
         </p>
+        <p>
+          Online ödeme yapmanız halinde ad-soyad, e-posta, telefon, il/ilçe,
+          teslimat adresi, (paylaşmanız halinde) vergi kimlik / TC kimlik
+          numarası ve sipariş bilgileriniz işlenir.
+        </p>
+        <p>
+          Sitemize üye olmanız halinde ayrıca; ad-soyad, e-posta adresi,
+          şifrenizin geri döndürülemez şekilde özetlenmiş (hash) hali,
+          kaydettiğiniz telefon/adres/vergi numarası bilgileri, üyelik ve son
+          giriş tarihleriniz ile sipariş geçmişiniz işlenir. &quot;Google ile
+          devam et&quot; seçeneğini kullanmanız halinde Google hesabınızdan
+          yalnızca ad-soyad, e-posta adresi ve Google hesap kimliğiniz alınır;
+          Google şifreniz tarafımıza iletilmez.
+        </p>
       </LegalSection>
 
       <LegalSection title="3. Kişisel Verilerin İşlenme Amacı">
         <p>
           Toplanan kişisel veriler; sipariş ve teklif taleplerinin
           değerlendirilmesi, müşteri talepleriyle ilgili iletişimin
-          sürdürülmesi ve satış süreçlerinin yürütülmesi amaçlarıyla
-          işlenmektedir.
+          sürdürülmesi, satış süreçlerinin yürütülmesi, üyelik hesabınızın
+          oluşturulması ve güvenliğinin sağlanması, sipariş durumu
+          bildirimlerinin (e-posta) gönderilmesi ve sipariş geçmişinizin
+          size sunulması amaçlarıyla işlenmektedir.
         </p>
       </LegalSection>
 
@@ -59,6 +75,14 @@ export default async function KvkkPage() {
           amacıyla ödeme kuruluşu PayTR&apos;ye aktarılır. Kart bilgileriniz
           doğrudan PayTR&apos;nin güvenli ödeme sayfasına girilir; tarafımızca
           görülmez ve saklanmaz.
+        </p>
+        <p>
+          Sipariş ve üyelik kayıtları, sitenin içerik yönetim altyapısını
+          sağlayan Sanity (Sanity Inc.) sunucularında; sipariş ve üyelik
+          e-postaları e-posta gönderim hizmeti Resend (Resend Inc.) üzerinden
+          iletilir. Google ile giriş yapmanız halinde kimlik doğrulama Google
+          (Google LLC) tarafından yapılır. Bu hizmet sağlayıcıların sunucuları
+          yurt dışında bulunabilir.
         </p>
       </LegalSection>
 

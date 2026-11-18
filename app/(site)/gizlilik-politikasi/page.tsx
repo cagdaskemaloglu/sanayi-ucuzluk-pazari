@@ -45,7 +45,9 @@ export default async function GizlilikPolitikasiPage() {
 
       <LegalSection title="4. Çerezler (Cookies) ve Yerel Depolama">
         <p>
-          Site şu an takip amaçlı çerez kullanmamaktadır. Sepet
+          Site takip amaçlı çerez kullanmamaktadır. Üye girişi yapmanız
+          halinde, oturumunuzun açık kalabilmesi için zorunlu (oturum)
+          çerezleri kullanılır; bu çerezler çıkış yaptığınızda silinir. Sepet
           içeriğinizin tarayıcınızda hatırlanabilmesi için yalnızca
           tarayıcının yerel depolama (localStorage) özelliği
           kullanılmaktadır; bu veri cihazınızdan çıkmaz ve istediğiniz
@@ -65,7 +67,13 @@ export default async function GizlilikPolitikasiPage() {
             <span className="font-medium">Cloudflare</span> — DNS, güvenlik ve performans
           </li>
           <li>
-            <span className="font-medium">Sanity</span> — ürün/kategori içerik yönetimi
+            <span className="font-medium">Sanity</span> — ürün/kategori içeriği, sipariş ve üyelik kayıtları
+          </li>
+          <li>
+            <span className="font-medium">Resend</span> — sipariş ve üyelik e-postalarının gönderimi
+          </li>
+          <li>
+            <span className="font-medium">Google</span> — &quot;Google ile devam et&quot; seçeneğiyle giriş
           </li>
           <li>
             <span className="font-medium">WhatsApp (Meta)</span> — sipariş/teklif iletişimi

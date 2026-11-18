@@ -13,6 +13,8 @@ import {
 import { getProductsByIds, getSiteSettings } from "@/lib/sanity/fetchers";
 import { calculateShippingFee } from "@/lib/shipping";
 import { isValidProvinceDistrict } from "@/lib/data/tr-locations";
+import { getCurrentCustomerSession } from "@/lib/auth/options";
+import { findCustomerById } from "@/lib/auth/customers";
 import { getWriteClient } from "@/lib/sanity/write-client";
 import { SITE_CONFIG } from "@/lib/constants";
 
@@ -243,6 +245,9 @@ export async function POST(request: NextRequest) {
   // Sipariş kaydını "Beklemede" olarak Sanity'e yaz. SANITY_API_TOKEN hiç
   // tanımlı değilse kayıt atlanır (geliştirme kolaylığı); tanımlı olduğu
   // halde yazılamıyorsa ödeme BAŞLATILMAZ — kayıtsız para tahsil etmeyelim.
+  // Giriş yapmış üyenin siparişi hesabına bağlanır ("Hesabım → Siparişlerim").
+  const session = await getCurrentCustomerSession().catch(() => null);
+
   const writeClient = getWriteClient();
   if (writeClient) {
     try {
@@ -250,6 +255,9 @@ export async function POST(request: NextRequest) {
         _type: "order",
         orderNumber: merchantOid,
         status: "pending",
+        ...(session
+          ? { customer: { _type: "reference", _ref: session.id, _weak: true } }
+          : {}),
         customerName: buyer.name,
         customerSurname: buyer.surname,
         customerEmail: buyer.email,
@@ -279,6 +287,30 @@ export async function POST(request: NextRequest) {
         { error: "Siparişiniz kaydedilemedi. Lütfen tekrar deneyin." },
         { status: 500 }
       );
+    }
+
+    // Üyenin hesabında kayıtlı telefon/adres yoksa bu siparişteki bilgileri
+    // kaydet (bir sonraki siparişte form dolu gelsin). Doluysa dokunma.
+    if (session) {
+      try {
+        const customer = await findCustomerById(session.id);
+        if (customer) {
+          const missing = Object.fromEntries(
+            Object.entries({
+              phone: buyer.phone,
+              city: buyer.city,
+              district: buyer.district,
+              address: buyer.address,
+              taxNumber: buyer.taxNumber,
+            }).filter(([key, value]) => value && !customer[key as keyof typeof customer])
+          );
+          if (Object.keys(missing).length > 0) {
+            await writeClient.patch(customer._id).set(missing).commit();
+          }
+        }
+      } catch (error) {
+        console.error("Üye bilgileri güncellenemedi (sipariş etkilenmedi):", error);
+      }
     }
   }
 
