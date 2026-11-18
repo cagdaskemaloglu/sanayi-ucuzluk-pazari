@@ -1,24 +1,10 @@
 import { defineField, defineType } from "sanity";
-import { HepsiburadaImportInput } from "../components/hepsiburada-import-input";
 
 export const productType = defineType({
   name: "product",
   title: "Ürün",
   type: "document",
   fields: [
-    defineField({
-      name: "hepsiburadaUrl",
-      title: "Hepsiburada'dan Doldur (opsiyonel)",
-      description:
-        "Hepsiburada'daki ürün sayfasının linkini yapıştırıp 'Bilgileri Çek'e " +
-        "basın: ad, açıklama, marka, barkod ve fotoğraflar BOŞ alanlara " +
-        "doldurulur (dolu alanlara dokunulmaz). Kategori, birimler, fiyat ve " +
-        "stok durumunu siz girin. Hepsiburada isteği engelleyebilir; o " +
-        "durumda bilgileri elle girin. Not: açıklama ve fotoğraflar satıcının/" +
-        "üreticinin içeriğidir; kullanım hakkınız olduğundan emin olun.",
-      type: "string",
-      components: { input: HepsiburadaImportInput },
-    }),
     defineField({
       name: "name",
       title: "Ürün Adı",
